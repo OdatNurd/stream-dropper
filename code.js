@@ -1,3 +1,31 @@
+function randomFloatInRange(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function randomIntInRange (min, max)
+{
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function toRadians(degrees)
+{
+  return degrees * Math.PI / 180;
+}
+
+function toDegrees (radians)
+{
+  return radians * 180 / Math.PI;
+}
+
+function normalizeDegrees (degrees)
+{
+    degrees %= 360;
+    if (degrees < 0)
+        degrees += 360;
+    return degrees % 360;
+}
+
+
 class SpriteSheet {
   constructor(cssClass, sheetW, sheetH, spriteW, spriteH) {
     this.cssClass = cssClass;
@@ -13,7 +41,7 @@ class SpriteSheet {
   }
 
   randomFrame() {
-    return Math.round(Math.random() * this.frameWidth * this.frameHeight);
+    return randomIntInRange(0, this.frameWidth * this.frameHeight);
   }
 }
 
@@ -145,14 +173,11 @@ let parachute = new ParachuteSprite(viewport, parachuteSheet, parachuteSheet.ran
 emote.setParent(parachute);
 
 // Set up a random position and speed for the parachute.
-parachute.setPos(Math.round(Math.random() * parachute.container.clientWidth),
-                 Math.round(Math.random() * 64));
+parachute.setPos(randomIntInRange(0, parachute.container.clientWidth),
+                 randomIntInRange(0, 64));
 
-parachute.xSpeed = Math.round(Math.random() * 10) - 5;
-parachute.ySpeed = Math.abs(Math.round(Math.random() * 6) - 3);
-
-if (parachute.xSpeed == 0) parachute.xSpeed  = 5;
-if (parachute.ySpeed == 0) parachute.ySpeed  = 2;
+parachute.xSpeed = randomFloatInRange(-5, 5) || 5;
+parachute.ySpeed = randomFloatInRange(1, 3);
 
 // Since the emote is parented to the parachute, it's positiopn is an offset from
 // the parent, which here is set so that the emote hangs at the bottom of the
