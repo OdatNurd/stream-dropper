@@ -62,9 +62,11 @@ div {
   background-image: url(resources/images/emotes.png);
   width:  56px;
   height: 56px;
+  z-index: 1;
 }
 .parachute {
   background-image: url(resources/images/parachutes.png);
   width:  120px;
   height: 120px;
+  z-index: -1;
 }
