@@ -362,7 +362,7 @@ function renderLoop() {
 
 function toggleRender() {
   running = !running;
-  button.innerHTML = running === true ? "Click to Stop" : "Click to Start";
+  button.innerHTML = running === true ? "Stop" : "Start";
 
   // Every time the button is clicked the animation state toggles. Whenever it
   // toggles to off, swap the sprites being used for other random sprites. This

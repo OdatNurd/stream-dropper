@@ -28,28 +28,25 @@ div {
 
 #button {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  margin-left: -137px;
-  margin-top: -25px;
-  width: 256px;
-  height: 32px;
-  padding: 16px;
-  border-radius: 16px;
+  top: 16px;
+  left: 16px;
+  width: 64px;
+  height: 16px;
+  padding: 8px;
+  border-radius: 8px;
   border: 2px solid black;
   background: #666666;
   color: white;
   text-decoration: none;
   display: block;
-  font-size: 32px;
-  line-height: 32px;
+  font-size: 16px;
+  line-height: 16px;
   font-family: arial;
-  font-weight: bold;
   text-align: center;
 }
 
 #button:hover {
-  background: red;
+  background: darkorange;
 }
 
 #viewport {
