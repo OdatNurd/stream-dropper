@@ -40,6 +40,14 @@ class Utils {
   randomFrame() {
     return Utils.randomIntInRange(0, this.frameWidth * this.frameHeight);
   }
+
+  frameX(frame) {
+    return -1 * (frame % this.frameWidth) * this.spriteW;
+  }
+
+  frameY(frame) {
+    return (-1 * (Math.round(frame / this.frameWidth) % this.frameHeight)) * this.spriteH;
+  }
 }
 
 /* This class represents a simple sprite container, which allows for holding
@@ -157,10 +165,8 @@ class Sprite {
 
   setFrame(frame) {
     this.frame = frame;
-    this.style.backgroundPosition =
-      (-1 * (frame % this.sheet.frameWidth) * this.sheet.spriteW + 'px ') +
-      (-1 * (Math.round(frame / this.sheet.frameWidth) % this.sheet.frameHeight))
-      * this.sheet.spriteH + 'px ';
+    this.style.backgroundPosition = this.sheet.frameX(frame) + 'px ' +
+                                    this.sheet.frameY(frame) + 'px';
   }
 
   destroy() {
