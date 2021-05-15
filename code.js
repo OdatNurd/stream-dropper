@@ -7,8 +7,7 @@ class Utils {
   }
 
   /* Generate a random integer value in the given range. */
-  static randomIntInRange(min, max)
-  {
+  static randomIntInRange(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 }
@@ -23,7 +22,7 @@ class Utils {
  * sprites contained within * it.
  *
  * All sprites are assumed to be the same dimensions. */
- class SpriteSheet {
+class SpriteSheet {
   constructor(cssClass, sheetW, sheetH, spriteW, spriteH) {
     this.cssClass = cssClass;
 
@@ -180,7 +179,7 @@ class Sprite {
  * animation as well. */
 class ParachuteDropper extends SpriteContainer {
   constructor(container, className, x, y) {
-    super(container,className, x, y);
+    super(container, className, x, y);
     this.xSpeed = 0;
     this.ySpeed = 0;
 
@@ -248,6 +247,96 @@ class ParachuteDropper extends SpriteContainer {
   }
 }
 
+/* Make and return a parachute dropper item, containing a randomly selected
+ * emote and parachute. This sets the dropper up with an initial position,
+ * velocity, and other information, ready to be animated. */
+function makeDropper(emoteSheet, parachuteSheet) {
+  // Create a dropper wrapper and the sprites to be wrapped in it.
+  const dropper = new ParachuteDropper(viewport, 'dropper');
+  let emote = new Sprite(dropper.element, emoteSheet, emoteSheet.randomFrame());
+  let parachute = new Sprite(dropper.element, parachuteSheet, parachuteSheet.randomFrame());
+
+  // Set the emote position offset so that it appears centered under the
+  // parachute. It's horizontally centered and vertically 1/4 of it's own height
+  // off the bottom, so that it overlaps the place where the parachute chords are.
+  emote.setPos((parachuteSheet.spriteW / 2) - (emoteSheet.spriteW / 2),
+                parachuteSheet.spriteH - Math.round(emoteSheet.spriteH / 4));
+
+  // Add the class to the parachute that hides it from view
+  parachute.element.classList.toggle('hide');
+
+  // Tell the dropper about it's children so that it can update them later.
+  dropper.emote = emote;
+  dropper.parachute = parachute;
+
+  // Figure a spawn offset from the left and right sides of the viewport within
+  // which we will spawn in our character. We don't want to be too close to the
+  // left or right sides of the screen as we aarrive in, then set the position
+  // of the dropper. It's positioned vertically to be just off the top of the
+  // screen.
+  const dropperXOffs = Math.round(dropper.container.clientWidth / 7) * 2;
+
+  dropper.setPos(Utils.randomIntInRange(dropperXOffs, dropper.container.clientWidth - dropperXOffs), -162);
+
+  // Make the children reposition themselves based on their parent so that they're
+  // in the correct place to start with.
+  dropper.update();
+
+  // Set the initial speeds; we want to drop very fast with only a small amount of
+  // left to right as we're coming into the screen. The brake height specifies at
+  // what point we start slowing down. Visually, this happens at around the time
+  // the parachute deploys.
+  dropper.xSpeed = Utils.randomFloatInRange(3, 5);
+  dropper.ySpeed = Utils.randomFloatInRange(8, 10);
+  dropper.brakeHeight = Utils.randomIntInRange(1, 8);
+
+  // Randomly determine what direction we're moving.
+  if (Utils.randomFloatInRange(0, 1) <= 0.5) {
+    dropper.xSpeed *= -1;
+  }
+
+  return dropper;
+}
+
+/* Create and launch a new dropper by creating the instance and adding it to
+ * the global sprite list. */
+// Launch a new dropper.
+function launch() {
+  sprites.push(makeDropper(emoteSheet, parachuteSheet));
+}
+
+/* Render this frame; this will keep calling itself in a loop as long as the
+ * animation should be running. */
+function renderLoop() {
+  // Schedule another call for the next frame.
+  if (running === true) {
+    window.requestAnimationFrame(renderLoop);
+  }
+
+  // Track the framerate and frame timings.
+  frameCount++;
+
+  lastFrameTime = thisFrameTime;
+  thisFrameTime = new Date().getTime();
+  elapsedTime += thisFrameTime - lastFrameTime;
+  fps = 1000 / (thisFrameTime - lastFrameTime);
+
+  if (elapsedTime >= 1000) {
+    stats.innerHTML = `${frameCount} fps`;
+    elapsedTime -= 1000;
+    frameCount = 0;
+  }
+
+  // Trigger an update on all sprites and sprite containers added to the main
+  // sprite list. Any containers are responsible for updating their children,
+  // if they're not also in this list.
+  for (let i = 0; i < sprites.length; i++) {
+    if (sprites[i].parent === undefined) {
+      sprites[i].update();
+    }
+  }
+}
+
 // Get the elements from the DOM that we're going to be interacting with.
 // NOTE: None of this code is currently in a DOMReady guard, so this probably
 // only works for local testing (which is ok, since that's what we're doing).
@@ -264,114 +353,14 @@ let frameCount = 0;
 let elapsedTime = 0;
 let fps = 0;
 
-// Is the animation running?
-let running = false;
+// Is the animation running? In the final version we want the render loop to
+// only run while there are sprites simulating. For now, it's just always
+// going.
+let running = true;
 
 // Create the sprite sheets for our test emotes and the parachute sprites.
 const emoteSheet = new SpriteSheet('emote', 280, 224, 56, 56);
 const parachuteSheet = new SpriteSheet('parachute', 360, 360, 120, 120);
 
-// Create a dropper wrapper for the emote and parachute that we're about to
-// drop in.
-const dropper = new ParachuteDropper(viewport, 'dropper', 300, 100);
-
-// Create sprite objects for the emote and the parachute used in the test.
-let emote = new Sprite(dropper.element, emoteSheet, emoteSheet.randomFrame());
-let parachute = new Sprite(dropper.element, parachuteSheet, parachuteSheet.randomFrame());
-
-// Set the emote position offset so that it appears centered under the
-// parachute. It's horizontally centered and vertically 1/4 of it's own height
-// off the bottom, so that it overlaps the place where the parachute chords are.
-emote.setPos((parachuteSheet.spriteW / 2) - (emoteSheet.spriteW / 2),
-              parachuteSheet.spriteH - Math.round(emoteSheet.spriteH / 4));
-
-// Add the class to the parachute that hides it from view
-parachute.element.classList.toggle('hide');
-
-// Tell the dropper about it's children so that it can update them later.
-dropper.emote = emote;
-dropper.parachute = parachute;
-
-// Figure a spawn offset from the left and right sides of the viewport within
-// which we will spawn in our character. We don't want to be too close to the
-// left or right sides of the screen as we aarrive in, then set the position
-// of the dropper. It's positioned vertically to be just off the top of the
-// screen.
-const dropperXOffs = Math.round(dropper.container.clientWidth / 7) * 2;
-
-dropper.setPos(Utils.randomIntInRange(dropperXOffs, dropper.container.clientWidth - dropperXOffs),
-                -162);
-
-// Make the children reposition themselves based on their parent so that they're
-// in the correct place to start with.
-dropper.update();
-
-// Set the initial speeds; we want to drop very fast with only a small amount of
-// left to right as we're coming into the screen. The brake height specifies at
-// what point we start slowing down. Visually, this happens at around the time
-// the parachute deploys.
-dropper.xSpeed = Utils.randomFloatInRange(3, 5);
-dropper.ySpeed = Utils.randomFloatInRange(8, 10);
-dropper.brakeHeight = Utils.randomIntInRange(1, 8);
-
-// Randomly determine what direction we're moving.
-if (Utils.randomFloatInRange(0, 1) <= 0.5) {
-  dropper.xSpeed *= -1;
-}
-
-// Add the dropper to the sprite list so that the render loop will update it.
-sprites.push(dropper);
-
-
-// Calculate the frame rate, so we can determine how well things are
-// performing.
-function updateFPS() {
-  frameCount++;
-
-  lastFrameTime = thisFrameTime;
-  thisFrameTime = new Date().getTime();
-  elapsedTime += thisFrameTime - lastFrameTime;
-  fps = 1000 / (thisFrameTime - lastFrameTime);
-
-  if (elapsedTime >= 1000)
-  {
-    stats.innerHTML = `${frameCount} fps`;
-    elapsedTime -= 1000;
-    frameCount = 0;
-  }
-}
-
-// Render this frame; this will keep calling itself in a loop as long
-// as the animation should be running.
-function renderLoop() {
-  // Schedule another call for the next frame.
-  if (running === true) {
-    window.requestAnimationFrame(renderLoop);
-  }
-
-  // Update the framerate, then animate the sprites.
-  updateFPS();
-
-  for (let i=0; i < sprites.length; i++)
-  {
-    if (sprites[i].parent === undefined) {
-      sprites[i].update();
-    }
-  }
-}
-
-function toggleRender() {
-  running = !running;
-  button.innerHTML = running === true ? "Stop" : "Start";
-
-  // Every time the button is clicked the animation state toggles. Whenever it
-  // toggles to off, swap the sprites being used for other random sprites. This
-  // is a test of the spread sheet.
-  if (running === false) {
-    emote.setFrame(emote.sheet.randomFrame())
-    parachute.setFrame(parachute.sheet.randomFrame())
-  }
-  if (running === true) {
-    renderLoop();
-  }
-}
+// Start everything going.
+renderLoop();

@@ -20,12 +20,15 @@ div {
   text-align: center;
 }
 
+/* The container for the status information we output, such as the framerate
+ * the animation loop is rendering at. */
 #stats {
   width: 100%;
   bottom: 24px;
   left: 0px;
 }
 
+/* Style the button used for testing purposes to trigger drops. */
 #button {
   position: absolute;
   top: 16px;
@@ -49,12 +52,16 @@ div {
   background: darkorange;
 }
 
+/* The div with this ID fills the content of the page and is the container that
+ * the DOM sprites or sprite groups are stored inside of. */
 #viewport {
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
+/* Stop items from being displayed; applied to the parachute while it's supposed
+ * to be invisible. */
 .hide {
   display: none;
 }
@@ -101,6 +108,8 @@ div {
   transform-origin: 50% 0%;
 }
 
+/* This class is applied to the sprite group that contains the parachute and
+ * the emote that's being dropped. */
 .dropper {
   /*border: 1px dashed yellow;*/
   width: 120px;
@@ -109,6 +118,8 @@ div {
   top: 100px;
 }
 
+/* This class is applied to the sprite that represents the emote being dropped;
+ * it sets the sprite sheet image to be used. */
 .emote {
   /*border: 1px dashed red;*/
   background-image: url(resources/images/emotes.png);
@@ -117,6 +128,8 @@ div {
   z-index: 1;
 }
 
+/* This class is applied to the sprite that represents the parachute; it sets
+ * the sprite sheet image to be used. */
 .parachute {
   /*border: 1px dashed red;*/
   background-image: url(resources/images/parachutes.png);
