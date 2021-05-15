@@ -1,35 +1,18 @@
-/* Generate a random float value in the given range. */
-function randomFloatInRange(min, max) {
-  return Math.random() * (max - min) + min;
+/* This class contains some simple static utility functions for use elsewhere
+ * in the engine. */
+class Utils {
+  /* Generate a random float value in the given range. */
+  static randomFloatInRange(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  /* Generate a random integer value in the given range. */
+  static randomIntInRange(min, max)
+  {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
 }
 
-/* Generate a random integer value in the given range. */
-function randomIntInRange(min, max)
-{
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-/* Convert a value in degrees into radians. */
-function toRadians(degrees)
-{
-  return degrees * Math.PI / 180;
-}
-
-/* Convert a value in radians to degrees. */
-function toDegrees(radians)
-{
-  return radians * 180 / Math.PI;
-}
-
-/* Given a value in degrees, normalize it so that it falls within a range of
- * 0 to 360. */
-function normalizeDegrees(degrees)
-{
-    degrees %= 360;
-    if (degrees < 0)
-        degrees += 360;
-    return degrees % 360;
-}
 
 /* This class represents a sprite sheet, which is an image that contains one
  * or more sprites that can be used as backgrounds in a div.
@@ -55,7 +38,7 @@ function normalizeDegrees(degrees)
   }
 
   randomFrame() {
-    return randomIntInRange(0, this.frameWidth * this.frameHeight);
+    return Utils.randomIntInRange(0, this.frameWidth * this.frameHeight);
   }
 }
 
@@ -310,7 +293,7 @@ dropper.parachute = parachute;
 // screen.
 const dropperXOffs = Math.round(dropper.container.clientWidth / 7) * 2;
 
-dropper.setPos(randomIntInRange(dropperXOffs, dropper.container.clientWidth - dropperXOffs),
+dropper.setPos(Utils.randomIntInRange(dropperXOffs, dropper.container.clientWidth - dropperXOffs),
                 -162);
 
 // Make the children reposition themselves based on their parent so that they're
@@ -321,12 +304,12 @@ dropper.update();
 // left to right as we're coming into the screen. The brake height specifies at
 // what point we start slowing down. Visually, this happens at around the time
 // the parachute deploys.
-dropper.xSpeed = randomFloatInRange(3, 5);
-dropper.ySpeed = randomFloatInRange(8, 10);
-dropper.brakeHeight = randomIntInRange(1, 8);
+dropper.xSpeed = Utils.randomFloatInRange(3, 5);
+dropper.ySpeed = Utils.randomFloatInRange(8, 10);
+dropper.brakeHeight = Utils.randomIntInRange(1, 8);
 
 // Randomly determine what direction we're moving.
-if (randomFloatInRange(0, 1) <= 0.5) {
+if (Utils.randomFloatInRange(0, 1) <= 0.5) {
   dropper.xSpeed *= -1;
 }
 
