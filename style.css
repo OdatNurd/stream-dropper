@@ -58,13 +58,70 @@ div {
   overflow: hidden;
 }
 
+.hide {
+  display: none;
+}
+
+@keyframes deployChute {
+  0% {
+    transform: scale(0.01);
+  }
+  100% {
+    transform: scale(1.0);
+  }
+}
+
+/* An animation that can be applied to scale something from 0.01% of its size
+ * up to 100% of it's size, scaling from the center bottom of the image. This
+ * is used to "deploy" the parachute. */
+.deploy {
+  animation: deployChute 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+  transform-origin: 50% 100%;
+}
+
+@keyframes sway {
+  0% {
+    transform: rotate(8deg);
+  }
+  50% {
+    transform: rotate(-8deg);
+  }
+  100% {
+    transform: rotate(8deg);
+  }
+}
+
+/* An animation that can be applied to cause something to sway slowly from
+ * side to side from it's center-top side.
+ *
+ * The animation delay starts the animation at the point it would be at after
+ * that many seconds. This is because the first frame of the animation is
+ * at 8 degrees rotated, which looks odd. Thus the animation starts more in an
+ * upright portion of the animation. */
+.sway {
+  animation: sway 7s ease-in-out infinite;
+  animation-delay: -5.25s;
+  transform-origin: 50% 0%;
+}
+
+.dropper {
+  /*border: 1px dashed yellow;*/
+  width: 120px;
+  height: 162px; /* parachute height + 3/4's of the emote height) */
+  left: 100px;
+  top: 100px;
+}
+
 .emote {
+  /*border: 1px dashed red;*/
   background-image: url(resources/images/emotes.png);
   width:  56px;
   height: 56px;
   z-index: 1;
 }
+
 .parachute {
+  /*border: 1px dashed red;*/
   background-image: url(resources/images/parachutes.png);
   width:  120px;
   height: 120px;
