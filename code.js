@@ -262,12 +262,18 @@ class ParachuteDropper extends SpriteContainer {
       this.element.classList.toggle('sway');
     }
 
+    // Get the relative position of the emote in the dropper so we can use it's
+    // bounding as the collision bounds; this is an alias to make the code
+    // below look nicer..
+    const emoteX = this.x + this.emote.x;
+    const emoteY = this.y + this.emote.y;
+
     // Bounce on the left and right viewport edges.
-    if ((this.x <= 0) || (this.x >= this.container.clientWidth - this.width))
+    if ((emoteX <= 0) || (emoteX >= this.container.clientWidth - this.emote.sheet.spriteW))
       this.xSpeed = -1 * this.xSpeed;
 
     // When we touch down, indicate that we've landed so that we stop updating,
-    if (this.y >= this.container.clientHeight - this.height) {
+    if (emoteY >= this.container.clientHeight - this.emote.sheet.spriteH - (0.25 * targetSheet.spriteH)) {
       // We're landed, so stop updating.
       this.landed = true;
 
@@ -276,9 +282,16 @@ class ParachuteDropper extends SpriteContainer {
       if (this.parachute !== null) {
         this.parachute.element.classList.toggle('hide');
         this.play(this.sndLand);
-        if (Utils.randomFloatInRange(0, 1) >= 0.5) {
-          this.play(this.sndWinner);
-        }
+      }
+
+      // In order to be considered a winner, the emote has to land so that at
+      // least one pixel of it's bounding box is touching on the left or the
+      // right side of the bounding box of the target.
+      if (emoteX > target.x - this.emote.sheet.spriteW && emoteX < target.x + target.sheet.spriteW) {
+        this.play(this.sndWinner);
+        console.log(`WINNER: ${this.score()}`);
+      } else {
+        console.log('LOSER');
       }
     }
 
@@ -288,6 +301,21 @@ class ParachuteDropper extends SpriteContainer {
     // Allow the parachute and emote to update if they need to.
     if (this.parachute !== null) this.parachute.update();
     if (this.emote !== null) this.emote.update();
+  }
+
+  score() {
+    // The positions that are the center of the target and the center of the
+    // emote; note that the emote is relative to our bounds.
+    const midTarget = target.x + (target.sheet.spriteW / 2);
+    const midEmote = this.x + this.emote.x + (this.emote.sheet.spriteW / 2);
+
+    // The maximum possible distance apart that the emote and the center of the
+    // target can be if this is a winner.
+    const maxDist = (target.sheet.spriteW / 2) + (this.emote.sheet.spriteW / 2);
+
+    // Calculate the score as a percentage of how far apart the two values are
+    // from each other.
+    return 100 - ((Math.abs(midTarget - midEmote) / maxDist) * 100.0);
   }
 }
 
@@ -333,6 +361,23 @@ function makeDropper(emoteSheet, parachuteSheet) {
   dropper.xSpeed = Utils.randomFloatInRange(3, 5);
   dropper.ySpeed = Utils.randomFloatInRange(8, 10);
   dropper.brakeHeight = Utils.randomIntInRange(1, 8);
+
+  // Loser: Right edge of emote is coindent with the left edge of the target;
+  //        must overlap by at least one pixel.
+  // dropper.x = target.x - emote.x - emote.sheet.spriteW;
+
+  // Winner: Now the edge overlaps by 1.
+  // dropper.x = target.x - emote.x - emote.sheet.spriteW + 1;
+
+  // Loser: Left edge of emote is coincident with the right edge of the target;
+  //        must overlap by at least one pixel.
+  // dropper.x = target.x + target.sheet.spriteW - ((parachute.sheet.spriteW - emote.sheet.spriteW) / 2);
+
+  // Winner: Now the edge overlaps by 1
+  // dropper.x = target.x + target.sheet.spriteW - ((parachute.sheet.spriteW - emote.sheet.spriteW) / 2) - 1;
+
+  // Winner, best possible score, the emote is perfectly centered in the target.
+  // dropper.x = target.x + (target.sheet.spriteW / 2) - (emote.sheet.spriteW / 2) - emote.x;
 
   // Randomly determine what direction we're moving.
   if (Utils.randomFloatInRange(0, 1) <= 0.5) {
