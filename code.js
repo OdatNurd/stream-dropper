@@ -80,6 +80,13 @@ class SpriteContainer {
     this.container.appendChild(this.element);
   }
 
+  play(snd, restart) {
+    if (restart === true) {
+      snd.currentTime = 0;
+    }
+    snd.play();
+  }
+
   setPos(x, y) {
     this.x = x;
     this.y = y;
@@ -180,6 +187,38 @@ class Sprite {
 class ParachuteDropper extends SpriteContainer {
   constructor(container, className, x, y) {
     super(container, className, x, y);
+
+    const landSounds = ["leaves.ogg", "snow.ogg", "sploosh.ogg"];
+    const landPick = landSounds[Utils.randomIntInRange(0, 2)];
+
+    this.sndParachute = document.createElement("audio");
+    this.sndLand = document.createElement("audio");
+    this.sndWinner = document.createElement("audio");
+    this.sndScream = document.createElement("audio");
+
+    this.sndParachute.src = "resources/sounds/parachute.ogg";
+    this.sndParachute.playbackRate = Utils.randomFloatInRange(0.5, 2);
+    this.sndParachute.preservesPitch = false;
+
+    this.sndLand.src = `resources/sounds/${landPick}`;
+    this.sndLand.playbackRate = Utils.randomFloatInRange(0.5, 2);
+    this.sndLand.preservesPitch = false;
+
+    this.sndWinner.src = "resources/sounds/whoopee.ogg";
+    this.sndWinner.playbackRate = Utils.randomFloatInRange(0.75, 2);
+    this.sndWinner.preservesPitch = false;
+
+    this.sndScream.src = "resources/sounds/wilhelm.ogg";
+    this.sndScream.playbackRate = Utils.randomFloatInRange(0.75, 2.0);
+    this.sndScream.preservesPitch = false;
+
+    if (Utils.randomFloatInRange(0, 1) >= 0.95) {
+      this.play(this.sndScream);
+    }
+
+    this.element.appendChild(this.sndParachute);
+    this.element.appendChild(this.sndLand);
+
     this.xSpeed = 0;
     this.ySpeed = 0;
 
@@ -216,6 +255,7 @@ class ParachuteDropper extends SpriteContainer {
       if (this.parachute !== null) {
         this.parachute.element.classList.toggle('hide');
         this.parachute.element.classList.toggle('deploy');
+        this.play(this.sndParachute);
       }
 
       // Start swaying now that the parachute is out.
@@ -235,6 +275,10 @@ class ParachuteDropper extends SpriteContainer {
       this.element.classList.toggle('sway');
       if (this.parachute !== null) {
         this.parachute.element.classList.toggle('hide');
+        this.play(this.sndLand);
+        if (Utils.randomFloatInRange(0, 1) >= 0.5) {
+          this.play(this.sndWinner);
+        }
       }
     }
 
