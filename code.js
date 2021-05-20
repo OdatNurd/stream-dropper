@@ -405,6 +405,17 @@ let running = true;
 // Create the sprite sheets for our test emotes and the parachute sprites.
 const emoteSheet = new SpriteSheet('emote', 280, 224, 56, 56);
 const parachuteSheet = new SpriteSheet('parachute', 360, 360, 120, 120);
+const targetSheet = new SpriteSheet('target', 390, 110, 390, 110);
+
+// Create the target that the droppers are aiming for. This is not added to the
+// global sprite list and thus it's update() method is never called, but by the
+// same token it has no updates that it needs to do; it's just passive.
+const target = new Sprite(viewport, targetSheet, 0,
+  Utils.randomIntInRange(
+    emoteSheet.spriteW * 1.5,
+    viewport.clientWidth - targetSheet.spriteW - (emoteSheet.spriteW * 1.5)
+  ),
+  viewport.clientHeight - (0.75 * targetSheet.spriteH));
 
 // Start everything going.
 renderLoop();

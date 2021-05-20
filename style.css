@@ -137,3 +137,14 @@ div {
   height: 120px;
   z-index: -1;
 }
+
+/* This class is applied to the sprite that represents the target. Unlike the
+ * others, this is a sprite sheet that contains just a single sprite
+ * (currently). */
+.target {
+  /*border: 1px dashed red;*/
+  background-image: url(resources/images/target.png);
+  width:  390px;
+  height: 110px;
+  z-index: -10;
+}
