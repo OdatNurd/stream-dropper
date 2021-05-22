@@ -61,7 +61,8 @@ div {
 }
 
 /* Stop items from being displayed; applied to the parachute while it's supposed
- * to be invisible. */
+ * to be invisible as well as the score plate, which is deferred until the
+ * score is known. */
 .hide {
   display: none;
 }
@@ -107,6 +108,23 @@ div {
   animation-delay: -5.25s;
   transform-origin: 50% 0%;
 }
+
+@keyframes fadeInText {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* An animation that can be applied to scale something from 0.01% of its size
+ * up to 100% of it's size, scaling from the center bottom of the image. This
+ * is used to "deploy" the parachute. */
+.fadeIn {
+  animation: fadeInText 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+}
+
 
 /* This class is applied to the sprite group that contains the parachute and
  * the emote that's being dropped. */
@@ -163,4 +181,20 @@ div {
 
   height:  24px;
   width: 350px;
+}
+
+.score {
+  /*border: 1px dashed purple;*/
+
+  font-family: 'Righteous', cursive;
+  color: slateblue;
+  font-size: 18px;
+  text-shadow: 3px 4px 5px darkslategrey;
+
+  text-align: center;
+  vertical-align: middle;
+  line-height: 18px;
+
+  height: 18px;
+  width: 80px;
 }

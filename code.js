@@ -231,6 +231,8 @@ class ParachuteDropper extends SpriteContainer {
 
     this.parachute = null;
     this.emote = null;
+    this.nameBox = null;
+    this.scoreBox = null;
   }
 
   update() {
@@ -289,9 +291,9 @@ class ParachuteDropper extends SpriteContainer {
       // right side of the bounding box of the target.
       if (emoteX > target.x - this.emote.sheet.spriteW && emoteX < target.x + target.sheet.spriteW) {
         this.play(this.sndWinner);
-        console.log(`WINNER: ${this.score()}`);
-      } else {
-        console.log('LOSER');
+        this.scoreBox.element.innerText = this.score().toFixed(3);
+        this.scoreBox.element.classList.toggle('hide');
+        this.scoreBox.element.classList.toggle('fadeIn');
       }
     }
 
@@ -328,13 +330,20 @@ function makeDropper(name, emoteSheet, parachuteSheet) {
   let emote = new Sprite(dropper.element, emoteSheet, emoteSheet.randomFrame());
   let parachute = new Sprite(dropper.element, parachuteSheet, parachuteSheet.randomFrame());
 
-  const nameplate = new SpriteContainer(dropper.element, 'nickname')
-  nameplate.element.innerText = name;
+  const namePlate = new SpriteContainer(dropper.element, 'nickname');
+  const scorePlate = new SpriteContainer(dropper.element, 'score');
 
-  nameplate.setPos(
-    (dropper.element.clientWidth / 2) - (nameplate.element.clientWidth / 2),
+  namePlate.element.innerText = name;
+  namePlate.setPos(
+    (dropper.element.clientWidth / 2) - (namePlate.element.clientWidth / 2),
     parachute.sheet.spriteH * 0.666
   );
+
+  scorePlate.setPos(
+    (dropper.element.clientWidth / 2) - (scorePlate.element.clientWidth / 2),
+    parachute.sheet.spriteH * 0.5
+  );
+  scorePlate.element.classList.toggle('hide');
 
   // Set the emote position offset so that it appears centered under the
   // parachute. It's horizontally centered and vertically 1/4 of it's own height
@@ -348,6 +357,8 @@ function makeDropper(name, emoteSheet, parachuteSheet) {
   // Tell the dropper about it's children so that it can update them later.
   dropper.emote = emote;
   dropper.parachute = parachute;
+  dropper.nameBox = namePlate;
+  dropper.scoreBox = scorePlate;
 
   // Figure a spawn offset from the left and right sides of the viewport within
   // which we will spawn in our character. We don't want to be too close to the
