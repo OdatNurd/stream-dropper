@@ -103,9 +103,9 @@ class SpriteContainer {
     this.sprites.push(sprite);
   }
 
-  update() {
+  update(deltaT) {
     for (let i = 0; i < this.sprites.length; i++) {
-      this.sprites[i].update();
+      this.sprites[i].update(deltaT);
     }
   }
 
@@ -163,9 +163,9 @@ class Sprite {
     this.style.top = (y || this.y) + 'px';
   }
 
-  update() {
+  update(deltaT) {
     if (this.child !== undefined) {
-      this.child.update();
+      this.child.update(deltaT);
     }
   }
 
@@ -229,14 +229,26 @@ class ParachuteDropper extends SpriteContainer {
     this.deployed = false;
     this.brakeHeight = 0;
 
+    this.winner = false;
+    this.dead = false;
+    this.deathClock = 0;
+
     this.parachute = null;
     this.emote = null;
     this.nameBox = null;
     this.scoreBox = null;
   }
 
-  update() {
+  update(deltaT) {
     if (this.landed === true) {
+      if (this.winner === false) {
+        this.deathClock += deltaT;
+        if (this.deathClock >= 5 * 1000 && this.dead === false) {
+          this.dead = true;
+          this.element.classList.toggle('fadeOut');
+          this.element.classList.toggle('ghost');
+        }
+      }
       return;
     }
 
@@ -290,10 +302,14 @@ class ParachuteDropper extends SpriteContainer {
       // least one pixel of it's bounding box is touching on the left or the
       // right side of the bounding box of the target.
       if (emoteX > target.x - this.emote.sheet.spriteW && emoteX < target.x + target.sheet.spriteW) {
+        this.winner = true;
         this.play(this.sndWinner);
         this.scoreBox.element.innerText = this.score().toFixed(3);
         this.scoreBox.element.classList.toggle('hide');
         this.scoreBox.element.classList.toggle('fadeIn');
+      } else {
+        this.winner = false;
+        this.element.classList.toggle('loser');
       }
     }
 
@@ -301,8 +317,8 @@ class ParachuteDropper extends SpriteContainer {
     this.reposition();
 
     // Allow the parachute and emote to update if they need to.
-    if (this.parachute !== null) this.parachute.update();
-    if (this.emote !== null) this.emote.update();
+    if (this.parachute !== null) this.parachute.update(deltaT);
+    if (this.emote !== null) this.emote.update(deltaT);
   }
 
   score() {
@@ -431,8 +447,9 @@ function renderLoop() {
 
   lastFrameTime = thisFrameTime;
   thisFrameTime = new Date().getTime();
-  elapsedTime += thisFrameTime - lastFrameTime;
-  fps = 1000 / (thisFrameTime - lastFrameTime);
+  const deltaT = thisFrameTime - lastFrameTime;
+  elapsedTime += deltaT;
+  fps = 1000 / deltaT;
 
   if (elapsedTime >= 1000) {
     stats.innerHTML = `${frameCount} fps`;
@@ -445,7 +462,7 @@ function renderLoop() {
   // if they're not also in this list.
   for (let i = 0; i < sprites.length; i++) {
     if (sprites[i].parent === undefined) {
-      sprites[i].update();
+      sprites[i].update(deltaT);
     }
   }
 }

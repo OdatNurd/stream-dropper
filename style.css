@@ -67,6 +67,19 @@ div {
   display: none;
 }
 
+/* Droppers that don't land on the target get this class added to them so that
+ * they are less obtrusive, because nobody wants to look at a loser. */
+.loser {
+  opacity: 0.70;
+}
+
+/* Droppers that fail will have this class added to their class list when their
+ * death animation is applied, so that they will stay all dead after they're
+ * faded out. */
+.ghost {
+  opacity: 0.0;
+}
+
 @keyframes deployChute {
   0% {
     transform: scale(0.01);
@@ -125,6 +138,24 @@ div {
   animation: fadeInText 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
 }
 
+@keyframes fadeOutDropper {
+  0% {
+    opacity: 0.7;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(56px);
+  }
+}
+
+/* An animation that can be applied to scale something from 0.01% of its size
+ * up to 100% of it's size, scaling from the center bottom of the image. This
+ * is used to "deploy" the parachute. */
+.fadeOut {
+  animation: fadeOutDropper 3.0s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+}
+
 
 /* This class is applied to the sprite group that contains the parachute and
  * the emote that's being dropped. */
@@ -170,6 +201,7 @@ div {
 .nickname {
   /*border: 1px dashed purple;*/
 
+  /* Arial, Bangers, Furore, Pricedown, Raleway, Roboto */
   font-family: 'Righteous', cursive;
   color: darkorange;
   font-size: 24px;
