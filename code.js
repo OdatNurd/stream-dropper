@@ -322,11 +322,19 @@ class ParachuteDropper extends SpriteContainer {
 /* Make and return a parachute dropper item, containing a randomly selected
  * emote and parachute. This sets the dropper up with an initial position,
  * velocity, and other information, ready to be animated. */
-function makeDropper(emoteSheet, parachuteSheet) {
+function makeDropper(name, emoteSheet, parachuteSheet) {
   // Create a dropper wrapper and the sprites to be wrapped in it.
   const dropper = new ParachuteDropper(viewport, 'dropper');
   let emote = new Sprite(dropper.element, emoteSheet, emoteSheet.randomFrame());
   let parachute = new Sprite(dropper.element, parachuteSheet, parachuteSheet.randomFrame());
+
+  const nameplate = new SpriteContainer(dropper.element, 'nickname')
+  nameplate.element.innerText = name;
+
+  nameplate.setPos(
+    (dropper.element.clientWidth / 2) - (nameplate.element.clientWidth / 2),
+    parachute.sheet.spriteH * 0.666
+  );
 
   // Set the emote position offset so that it appears centered under the
   // parachute. It's horizontally centered and vertically 1/4 of it's own height
@@ -362,6 +370,11 @@ function makeDropper(emoteSheet, parachuteSheet) {
   dropper.ySpeed = Utils.randomFloatInRange(8, 10);
   dropper.brakeHeight = Utils.randomIntInRange(1, 8);
 
+  // dropper.x = 300;
+  // dropper.y = 200;
+  // dropper.xSpeed = 0;
+  // dropper.ySpeed = 0;
+
   // Loser: Right edge of emote is coindent with the left edge of the target;
   //        must overlap by at least one pixel.
   // dropper.x = target.x - emote.x - emote.sheet.spriteW;
@@ -391,7 +404,7 @@ function makeDropper(emoteSheet, parachuteSheet) {
  * the global sprite list. */
 // Launch a new dropper.
 function launch() {
-  sprites.push(makeDropper(emoteSheet, parachuteSheet));
+  sprites.push(makeDropper('SampleNickGoesHere', emoteSheet, parachuteSheet));
 }
 
 /* Render this frame; this will keep calling itself in a loop as long as the

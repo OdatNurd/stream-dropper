@@ -148,3 +148,19 @@ div {
   height: 110px;
   z-index: -10;
 }
+
+.nickname {
+  /*border: 1px dashed purple;*/
+
+  font-family: 'Righteous', cursive;
+  color: darkorange;
+  font-size: 24px;
+  text-shadow: 3px 4px 5px darkslategrey;
+
+  text-align: center;
+  vertical-align: middle;
+  line-height: 24px;
+
+  height:  24px;
+  width: 350px;
+}
