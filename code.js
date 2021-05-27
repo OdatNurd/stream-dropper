@@ -80,10 +80,14 @@ class SpriteContainer {
     this.container.appendChild(this.element);
   }
 
-  play(snd, restart) {
+  play(snd, volume, restart) {
     if (restart === true) {
       snd.currentTime = 0;
     }
+    if (volume !== undefined) {
+      snd.volume = volume;
+    }
+
     snd.play();
   }
 
@@ -180,16 +184,54 @@ class Sprite {
   }
 }
 
+/* This simple subclass of Sprite controls the target at the bottom of the
+ * screen. It contains child elements that are the droppers that have landed on
+ * it. */
+class Target extends Sprite {
+  constructor(container, spriteSheet, x, y) {
+    super(container, spriteSheet, 0, x, y);
+
+    // The droppers that are currently sitting on the target.
+    this.droppers = [];
+  }
+
+  addDropper(dropper) {
+    this.droppers.push(dropper);
+  }
+
+  update(deltaT) {
+    if (this.droppers.length > 1) {
+      let highDropper = undefined;
+
+      for (let i = 0 ; i < this.droppers.length ; i++) {
+        if (highDropper === undefined || this.droppers[i].dropScore > highDropper.dropScore) {
+          if (highDropper !== undefined) {
+            highDropper.lose();
+          }
+          highDropper = this.droppers[i];
+        } else {
+          this.droppers[i].lose();
+        }
+      }
+
+      this.droppers.length = 0;
+      this.droppers.push(highDropper);
+    }
+  }
+}
+
 /* This simple subclass of the SpriteContainer is specifically for grouping
  * together a parachute sprite and an emote sprite for dropping. It parents
  * them so that they will move together, and allows for applying a swaying
  * animation as well. */
 class ParachuteDropper extends SpriteContainer {
-  constructor(container, className, x, y) {
+  constructor(container, className, x, y, target) {
     super(container, className, x, y);
 
     const landSounds = ["leaves.ogg", "snow.ogg", "sploosh.ogg"];
     const landPick = landSounds[Utils.randomIntInRange(0, 2)];
+
+    this.target = target;
 
     this.sndParachute = document.createElement("audio");
     this.sndLand = document.createElement("audio");
@@ -237,6 +279,8 @@ class ParachuteDropper extends SpriteContainer {
     this.emote = null;
     this.nameBox = null;
     this.scoreBox = null;
+
+    this.dropScore = 0;
   }
 
   update(deltaT) {
@@ -302,14 +346,9 @@ class ParachuteDropper extends SpriteContainer {
       // least one pixel of it's bounding box is touching on the left or the
       // right side of the bounding box of the target.
       if (emoteX > target.x - this.emote.sheet.spriteW && emoteX < target.x + target.sheet.spriteW) {
-        this.winner = true;
-        this.play(this.sndWinner);
-        this.scoreBox.element.innerText = this.score().toFixed(3);
-        this.scoreBox.element.classList.toggle('hide');
-        this.scoreBox.element.classList.toggle('fadeIn');
+        this.win();
       } else {
-        this.winner = false;
-        this.element.classList.toggle('loser');
+        this.lose();
       }
     }
 
@@ -319,6 +358,25 @@ class ParachuteDropper extends SpriteContainer {
     // Allow the parachute and emote to update if they need to.
     if (this.parachute !== null) this.parachute.update(deltaT);
     if (this.emote !== null) this.emote.update(deltaT);
+  }
+
+  win() {
+    this.winner = true;
+    this.play(this.sndWinner, 0.5);
+
+    this.dropScore = this.score();
+    this.scoreBox.element.innerText = this.dropScore.toFixed(3);
+    this.scoreBox.element.classList.toggle('hide');
+    this.scoreBox.element.classList.toggle('fadeIn');
+
+    // Add this dropper to the target's dropper list.
+    this.target.addDropper(this);
+  }
+
+  lose() {
+    this.winner = false;
+    this.element.classList.toggle('loser');
+    this.nameBox.element.classList.toggle('ghost');
   }
 
   score() {
@@ -340,9 +398,9 @@ class ParachuteDropper extends SpriteContainer {
 /* Make and return a parachute dropper item, containing a randomly selected
  * emote and parachute. This sets the dropper up with an initial position,
  * velocity, and other information, ready to be animated. */
-function makeDropper(name, emoteSheet, parachuteSheet) {
+function makeDropper(name, emoteSheet, parachuteSheet, target) {
   // Create a dropper wrapper and the sprites to be wrapped in it.
-  const dropper = new ParachuteDropper(viewport, 'dropper');
+  const dropper = new ParachuteDropper(viewport, 'dropper', 0, 0, target);
   let emote = new Sprite(dropper.element, emoteSheet, emoteSheet.randomFrame());
   let parachute = new Sprite(dropper.element, parachuteSheet, parachuteSheet.randomFrame());
 
@@ -419,6 +477,11 @@ function makeDropper(name, emoteSheet, parachuteSheet) {
   // Winner, best possible score, the emote is perfectly centered in the target.
   // dropper.x = target.x + (target.sheet.spriteW / 2) - (emote.sheet.spriteW / 2) - emote.x;
 
+  // dropper.x = Utils.randomIntInRange(
+  //   target.x - emote.x - emote.sheet.spriteW + 1,
+  //   target.x + target.sheet.spriteW - ((parachute.sheet.spriteW - emote.sheet.spriteW) / 2) - 1
+  //   );
+
   // Randomly determine what direction we're moving.
   if (Utils.randomFloatInRange(0, 1) <= 0.5) {
     dropper.xSpeed *= -1;
@@ -431,7 +494,7 @@ function makeDropper(name, emoteSheet, parachuteSheet) {
  * the global sprite list. */
 // Launch a new dropper.
 function launch() {
-  sprites.push(makeDropper('SampleNickGoesHere', emoteSheet, parachuteSheet));
+  sprites.push(makeDropper('SampleNickGoesHere', emoteSheet, parachuteSheet, target));
 }
 
 /* Render this frame; this will keep calling itself in a loop as long as the
@@ -493,15 +556,15 @@ const emoteSheet = new SpriteSheet('emote', 280, 224, 56, 56);
 const parachuteSheet = new SpriteSheet('parachute', 360, 360, 120, 120);
 const targetSheet = new SpriteSheet('target', 390, 110, 390, 110);
 
-// Create the target that the droppers are aiming for. This is not added to the
-// global sprite list and thus it's update() method is never called, but by the
-// same token it has no updates that it needs to do; it's just passive.
-const target = new Sprite(viewport, targetSheet, 0,
+// Create the target that the droppers are aiming for.
+const target = new Target(viewport, targetSheet,
   Utils.randomIntInRange(
     emoteSheet.spriteW * 1.5,
     viewport.clientWidth - targetSheet.spriteW - (emoteSheet.spriteW * 1.5)
   ),
   viewport.clientHeight - (0.75 * targetSheet.spriteH));
+
+sprites.push(target);
 
 // Start everything going.
 renderLoop();
