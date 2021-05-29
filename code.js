@@ -49,35 +49,84 @@ class SpriteSheet {
   }
 }
 
-/* This class represents a simple sprite container, which allows for holding
- * one or more Sprite instances. This is represented as a dynamically created
- * div which can be used to apply translations and rotations to multiple sprites
- * at once.
+/* This class represents an Entity, which is some object or thing in the game
+ * world. This can be something that's graphical, or animated, which displays
+ * or which is invisibie.
  *
- * The constructor requires you to specify the element in the page that will
- * contain this container, the css class to apply to it, and a location within
- * the container provided that it should be positioned at initially. */
-class SpriteContainer {
-  constructor(container, className, x, y) {
+ * Everything that is visual or can be positioned on the screen is an Entity of
+ * some sort; usually it is a sub-class.
+ */
+class Entity {
+  // Construct an entity. If given, the sprite sheet will be used to display
+  // this sprite, but it's optional. The dimensions of a sprite come from the
+  // sprite sheet that's used for it, so entities with no sprite sheet
+  // inherently have no dimensions.
+  constructor(container, spriteSheet, frame, x, y) {
     this.container = container;
+    this.sheet = spriteSheet || null;
 
-    // Create a div that we can use for our sprite, and give it the
-    // appropriate class.
     this.element = document.createElement("div");
-    this.element.className = className;
-
-    // Alias a reference to the style of the selement
     this.style = this.element.style;
+
+    if (this.sheet) {
+      this.element.className = this.sheet.cssClass;
+      this._width = this.sheet.spriteW;
+      this._height = this.sheet.spriteH;
+    } else {
+      this._width = 0;
+      this._height = 0;
+    }
+
+    this.setFrame(frame || 0);
 
     this.x = x || 0;
     this.y = y || 0;
     this.reposition();
+  }
 
-    // Our child sprites.
-    this.sprites = [];
-
-    // Attach to the container.
+  // Create the entity by adding it to the page so that it will become visible.
+  create() {
     this.container.appendChild(this.element);
+  }
+
+  // Drestroy the entity by removing it's element from the page so that it's
+  // no longer part of the DOM.
+  destroy() {
+    this.container.removeChild(this.element);
+  }
+
+  set width(newW) {
+    this._width = newW;
+  }
+
+  get width() {
+    return this._width;
+  }
+
+  set height(newH) {
+    this._height = newH;
+  }
+
+  get height() {
+    return this._height;
+  }
+
+  setPos(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  reposition(x, y) {
+    this.style.left = (x ?? this.x) + 'px';
+    this.style.top = (y ?? this.y) + 'px';
+  }
+
+  setFrame(frame) {
+    this.frame = frame;
+    if (this.sheet !== null) {
+      this.style.backgroundPosition = this.sheet.frameX(frame) + 'px ' +
+                                      this.sheet.frameY(frame) + 'px';
+    }
   }
 
   play(snd, volume, restart) {
@@ -91,15 +140,37 @@ class SpriteContainer {
     snd.play();
   }
 
-  setPos(x, y) {
-    this.x = x;
-    this.y = y;
-    this.reposition();
+  update(deltaT) {
+  }
+}
+
+
+/* This class represents a simple sprite container, which allows for holding
+ * one or more Sprite instances. This is represented as a dynamically created
+ * div which can be used to apply translations and rotations to multiple sprites
+ * at once.
+ *
+ * The constructor requires you to specify the element in the page that will
+ * contain this container, the css class to apply to it, and a location within
+ * the container provided that it should be positioned at initially. */
+class SpriteContainer extends Entity {
+  constructor(container, className, x, y) {
+    super(container, null, 0, x, y);
+
+    // Add our class name to the element, since we don't have an associated
+    // sprite sheet that provides one for us.
+    this.element.className = className;
+
+    // Our child sprites.
+    this.sprites = [];
+
+    // Attach to the container.
+    this.create();
   }
 
-  reposition(x, y) {
-    this.style.left = (x || this.x) + 'px';
-    this.style.top = (y || this.y) + 'px';
+  setPos(x, y) {
+    super.setPos(x, y);
+    this.reposition();
   }
 
   addChild(sprite) {
@@ -112,10 +183,6 @@ class SpriteContainer {
       this.sprites[i].update(deltaT);
     }
   }
-
-  destroy() {
-    this.container.removeChild(this.element);
-  }
 }
 
 /* This class represents a simple DOM sprite. The constructor requires you to
@@ -126,29 +193,12 @@ class SpriteContainer {
  * The sprite is implemented as a dynamically created div, stored in the passed
  * in container, which uses as it's background image one of the images from the
  * sprite sheet provided. */
-class Sprite {
+class Sprite extends Entity {
   constructor(container, spriteSheet, frame, x, y) {
-    this.container = container;
-    this.sheet = spriteSheet;
-
-    // Create a div that we can use for our sprite, and give it the
-    // appropriate class.
-    this.element = document.createElement("div");
-    this.element.className = this.sheet.cssClass;
-
-    // Alias a reference to the style of the selement
-    this.style = this.element.style;
-
-    // Set up the position in the viewport and reposition there.
-    this.x = x || 0;
-    this.y = y || 0;
-    this.reposition();
-
-    // Use a default sprite image
-    this.setFrame(frame || 0);
+    super(container, spriteSheet, frame, x, y);
 
     // Attach to the container.
-    this.container.appendChild(this.element);
+    this.create();
   }
 
   setParent(parent) {
@@ -157,30 +207,14 @@ class Sprite {
   }
 
   setPos(x, y) {
-    this.x = x;
-    this.y = y;
+    super.setPos(x, y);
     this.reposition();
-  }
-
-  reposition(x, y) {
-    this.style.left = (x || this.x) + 'px';
-    this.style.top = (y || this.y) + 'px';
   }
 
   update(deltaT) {
     if (this.child !== undefined) {
       this.child.update(deltaT);
     }
-  }
-
-  setFrame(frame) {
-    this.frame = frame;
-    this.style.backgroundPosition = this.sheet.frameX(frame) + 'px ' +
-                                    this.sheet.frameY(frame) + 'px';
-  }
-
-  destroy() {
-    this.container.removeChild(this.element);
   }
 }
 
@@ -327,11 +361,11 @@ class ParachuteDropper extends SpriteContainer {
     const emoteY = this.y + this.emote.y;
 
     // Bounce on the left and right viewport edges.
-    if ((emoteX <= 0) || (emoteX >= this.container.clientWidth - this.emote.sheet.spriteW))
+    if ((emoteX <= 0) || (emoteX >= this.container.clientWidth - this.emote.width))
       this.xSpeed = -1 * this.xSpeed;
 
     // When we touch down, indicate that we've landed so that we stop updating,
-    if (emoteY >= this.container.clientHeight - this.emote.sheet.spriteH - (0.25 * targetSheet.spriteH)) {
+    if (emoteY >= this.container.clientHeight - this.emote.height - (0.25 * target.height)) {
       // We're landed, so stop updating.
       this.landed = true;
 
@@ -345,7 +379,7 @@ class ParachuteDropper extends SpriteContainer {
       // In order to be considered a winner, the emote has to land so that at
       // least one pixel of it's bounding box is touching on the left or the
       // right side of the bounding box of the target.
-      if (emoteX > target.x - this.emote.sheet.spriteW && emoteX < target.x + target.sheet.spriteW) {
+      if (emoteX > target.x - this.emote.width && emoteX < target.x + target.width) {
         this.win();
       } else {
         this.lose();
@@ -382,12 +416,12 @@ class ParachuteDropper extends SpriteContainer {
   score() {
     // The positions that are the center of the target and the center of the
     // emote; note that the emote is relative to our bounds.
-    const midTarget = target.x + (target.sheet.spriteW / 2);
-    const midEmote = this.x + this.emote.x + (this.emote.sheet.spriteW / 2);
+    const midTarget = target.x + (target.width / 2);
+    const midEmote = this.x + this.emote.x + (this.emote.width / 2);
 
     // The maximum possible distance apart that the emote and the center of the
     // target can be if this is a winner.
-    const maxDist = (target.sheet.spriteW / 2) + (this.emote.sheet.spriteW / 2);
+    const maxDist = (target.width / 2) + (this.emote.width / 2);
 
     // Calculate the score as a percentage of how far apart the two values are
     // from each other.
@@ -410,12 +444,12 @@ function makeDropper(name, emoteSheet, parachuteSheet, target) {
   namePlate.element.innerText = name;
   namePlate.setPos(
     (dropper.element.clientWidth / 2) - (namePlate.element.clientWidth / 2),
-    parachute.sheet.spriteH * 0.666
+    parachute.height * 0.666
   );
 
   scorePlate.setPos(
     (dropper.element.clientWidth / 2) - (scorePlate.element.clientWidth / 2),
-    parachute.sheet.spriteH * 0.5
+    parachute.height * 0.5
   );
   scorePlate.element.classList.toggle('hide');
 
@@ -462,24 +496,24 @@ function makeDropper(name, emoteSheet, parachuteSheet, target) {
 
   // Loser: Right edge of emote is coindent with the left edge of the target;
   //        must overlap by at least one pixel.
-  // dropper.x = target.x - emote.x - emote.sheet.spriteW;
+  // dropper.x = target.x - emote.x - emote.width;
 
   // Winner: Now the edge overlaps by 1.
-  // dropper.x = target.x - emote.x - emote.sheet.spriteW + 1;
+  // dropper.x = target.x - emote.x - emote.width + 1;
 
   // Loser: Left edge of emote is coincident with the right edge of the target;
   //        must overlap by at least one pixel.
-  // dropper.x = target.x + target.sheet.spriteW - ((parachute.sheet.spriteW - emote.sheet.spriteW) / 2);
+  // dropper.x = target.x + target.width - ((parachute.width - emote.width) / 2);
 
   // Winner: Now the edge overlaps by 1
-  // dropper.x = target.x + target.sheet.spriteW - ((parachute.sheet.spriteW - emote.sheet.spriteW) / 2) - 1;
+  // dropper.x = target.x + target.width - ((parachute.width - emote.width) / 2) - 1;
 
   // Winner, best possible score, the emote is perfectly centered in the target.
-  // dropper.x = target.x + (target.sheet.spriteW / 2) - (emote.sheet.spriteW / 2) - emote.x;
+  // dropper.x = target.x + (target.width / 2) - (emote.width / 2) - emote.x;
 
   // dropper.x = Utils.randomIntInRange(
-  //   target.x - emote.x - emote.sheet.spriteW + 1,
-  //   target.x + target.sheet.spriteW - ((parachute.sheet.spriteW - emote.sheet.spriteW) / 2) - 1
+  //   target.x - emote.x - emote.width + 1,
+  //   target.x + target.width - ((parachute.width - emote.width) / 2) - 1
   //   );
 
   // Randomly determine what direction we're moving.
