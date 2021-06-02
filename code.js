@@ -301,7 +301,7 @@ class ParachuteDropper extends SpriteContainer {
   /* Create a dropper inside of the parent container given, ready to display
    * itself at a specific position. The dropper is also associated with the
    * target that it's aiming for. */
-  constructor(container, className, x, y, target) {
+  constructor(container, className, x, y, target, parachuteSheet, emoteSheet, name) {
     super(container, className, x, y);
 
     // Randomly choose a sound to be played when this dropper eventually lands
@@ -312,11 +312,36 @@ class ParachuteDropper extends SpriteContainer {
     // Keep a reference to our drop target.
     this.target = target;
 
-    // We do not yet have a parachute, emote or text boxes assigned yet.
-    this.parachute = null;
-    this.emote = null;
-    this.nameBox = null;
-    this.scoreBox = null;
+    // Create our child items.
+    this.parachute = new Sprite(this.element, parachuteSheet, parachuteSheet.randomFrame());
+    this.emote = new Sprite(this.element, emoteSheet, emoteSheet.randomFrame());;
+    this.nameBox = new SpriteContainer(this.element, 'nickname');
+    this.scoreBox = new SpriteContainer(this.element, 'score');
+
+    // Add the class to the parachute that hides it from view
+    this.parachute.element.classList.toggle('hide');
+
+    // Set the emote position offset so that it appears centered under the
+    // parachute. It's horizontally centered and vertically 1/4 of it's own height
+    // off the bottom, so that it overlaps the place where the parachute chords are.
+    this.emote.setPos((parachuteSheet.spriteW / 2) - (emoteSheet.spriteW / 2),
+                       parachuteSheet.spriteH - Math.round(emoteSheet.spriteH / 4));
+
+    // Initialize the box that will store the name of this dropper; it should be
+    // centered in the overall dropper.
+    this.nameBox.element.innerText = name;
+    this.nameBox.setPos(
+      (this.element.clientWidth / 2) - (this.nameBox.element.clientWidth / 2),
+      this.parachute.height * 0.666
+    );
+
+    // Like the name box, initialize the score box. The position is centered and
+    // above the name, but has no initial value and will be populated later.
+    this.scoreBox.setPos(
+      (this.element.clientWidth / 2) - (this.scoreBox.element.clientWidth / 2),
+      this.parachute.height * 0.5
+    );
+    this.scoreBox.element.classList.toggle('hide');
 
     // The sound that plays when the parachute is deployed.
     this.sndParachute = document.createElement("audio");
@@ -344,29 +369,45 @@ class ParachuteDropper extends SpriteContainer {
     this.sndScream.playbackRate = Utils.randomFloatInRange(0.75, 2.0);
     this.sndScream.preservesPitch = false;
 
-    // 5% of the time, on creation play the wilhelm scream sound.
-    if (Utils.randomFloatInRange(0, 1) >= 0.95) {
-      this.play(this.sndScream);
-    }
-
     // Attach the sounds to our selement.
     this.element.appendChild(this.sndParachute);
     this.element.appendChild(this.sndLand);
     this.element.appendChild(this.sndWinner);
     this.element.appendChild(this.sndScream);
 
-    // Initialize our speed and dimensions. The dimensions are hard coded based
-    // on knowing the size of a parachute and emote sprite.
-    this.xSpeed = 0;
-    this.ySpeed = 0;
+    // Make the children reposition themselves based on their parent so that they're
+    // in the correct place to start with.
+    this.update(0);
+
+    // Initialize our dimensions, which never change. They're hard coded based
+    // on knowing the size of a parachute and emote sprite and the positioning
+    // of those two things in the group.
     this.width = 120;
     this.height = 162;
+
+    // With all of our initial setup done, randomize everything for a new drop.
+    this.randomize();
+  }
+
+  /* Initially inialize (or re-initialize, if we are reusing this dropper) the
+   * options that control the dropper.
+   *
+   * This is invoked from the constructor to randomize positions, but will also
+   * be called when we get pulled out of the sprite pool and re-used. */
+  randomize() {
+    // 5% of the time, play the wilhelm scream sound as we're dropping into the
+    // screen. The sound actually starts before the drop begins.
+    if (Utils.randomFloatInRange(0, 1) >= 0.95) {
+      this.play(this.sndScream);
+    }
 
     // We have not landed yet.
     this.landed = false;
 
-    // We have no assigned braking height and have not yet deployed our chute.
-    this.brakeHeight = 0;
+    // Assign a braking height and indicate we've not yet deployed the cute. The
+    // brake height specifies at what point we start slowing down. Visually,
+    // this happens at around the time the parachute deploys.
+    this.brakeHeight = Utils.randomIntInRange(1, 8);
     this.deployed = false;
 
     // We have not won and we're not dead (and thus, the death clock is empty).
@@ -376,6 +417,51 @@ class ParachuteDropper extends SpriteContainer {
 
     // We have not scored yet.
     this.dropScore = 0;
+
+    // Figure a spawn offset from the left and right sides of the viewport
+    // within which we will spawn in our character. We don't want to be too
+    // close to the left or right sides of the screen as we arrive in.  It's
+    // positioned vertically to be just off the top of the screen.
+    const dropperXOffs = Math.round(this.container.clientWidth / 7) * 2;
+
+    this.setPos(Utils.randomIntInRange(dropperXOffs, this.container.clientWidth - dropperXOffs), -162);
+
+    // Set the initial speeds; we want to drop very fast with only a small amount of
+    // left to right as we're coming into the screen.
+    this.xSpeed = Utils.randomFloatInRange(3, 5);
+    this.ySpeed = Utils.randomFloatInRange(8, 10);
+
+    // this.x = 300;
+    // this.y = 200;
+    // this.xSpeed = 0;
+    // this.ySpeed = 0;
+
+    // Loser: Right edge of emote is coindent with the left edge of the target;
+    //        must overlap by at least one pixel.
+    // this.x = target.x - emote.x - emote.width;
+
+    // Winner: Now the edge overlaps by 1.
+    // this.x = target.x - emote.x - emote.width + 1;
+
+    // Loser: Left edge of emote is coincident with the right edge of the target;
+    //        must overlap by at least one pixel.
+    // this.x = target.x + target.width - ((parachute.width - emote.width) / 2);
+
+    // Winner: Now the edge overlaps by 1
+    // this.x = target.x + target.width - ((parachute.width - emote.width) / 2) - 1;
+
+    // Winner, best possible score, the emote is perfectly centered in the target.
+    // this.x = target.x + (target.width / 2) - (emote.width / 2) - emote.x;
+
+    // this.x = Utils.randomIntInRange(
+    //   target.x - emote.x - emote.width + 1,
+    //   target.x + target.width - ((parachute.width - emote.width) / 2) - 1
+    //   );
+
+    // Randomly determine what direction we're moving.
+    if (Utils.randomFloatInRange(0, 1) <= 0.5) {
+      this.xSpeed *= -1;
+    }
   }
 
   /* Called from update()
@@ -550,94 +636,7 @@ class ParachuteDropper extends SpriteContainer {
  * velocity, and other information, ready to be animated. */
 function makeDropper(name, emoteSheet, parachuteSheet, target) {
   // Create a dropper wrapper and the sprites to be wrapped in it.
-  const dropper = new ParachuteDropper(viewport, 'dropper', 0, 0, target);
-  let emote = new Sprite(dropper.element, emoteSheet, emoteSheet.randomFrame());
-  let parachute = new Sprite(dropper.element, parachuteSheet, parachuteSheet.randomFrame());
-
-  const namePlate = new SpriteContainer(dropper.element, 'nickname');
-  const scorePlate = new SpriteContainer(dropper.element, 'score');
-
-  namePlate.element.innerText = name;
-  namePlate.setPos(
-    (dropper.element.clientWidth / 2) - (namePlate.element.clientWidth / 2),
-    parachute.height * 0.666
-  );
-
-  scorePlate.setPos(
-    (dropper.element.clientWidth / 2) - (scorePlate.element.clientWidth / 2),
-    parachute.height * 0.5
-  );
-  scorePlate.element.classList.toggle('hide');
-
-  // Set the emote position offset so that it appears centered under the
-  // parachute. It's horizontally centered and vertically 1/4 of it's own height
-  // off the bottom, so that it overlaps the place where the parachute chords are.
-  emote.setPos((parachuteSheet.spriteW / 2) - (emoteSheet.spriteW / 2),
-                parachuteSheet.spriteH - Math.round(emoteSheet.spriteH / 4));
-
-  // Add the class to the parachute that hides it from view
-  parachute.element.classList.toggle('hide');
-
-  // Tell the dropper about it's children so that it can update them later.
-  dropper.emote = emote;
-  dropper.parachute = parachute;
-  dropper.nameBox = namePlate;
-  dropper.scoreBox = scorePlate;
-
-  // Figure a spawn offset from the left and right sides of the viewport within
-  // which we will spawn in our character. We don't want to be too close to the
-  // left or right sides of the screen as we aarrive in, then set the position
-  // of the dropper. It's positioned vertically to be just off the top of the
-  // screen.
-  const dropperXOffs = Math.round(dropper.container.clientWidth / 7) * 2;
-
-  dropper.setPos(Utils.randomIntInRange(dropperXOffs, dropper.container.clientWidth - dropperXOffs), -162);
-
-  // Make the children reposition themselves based on their parent so that they're
-  // in the correct place to start with.
-  dropper.update();
-
-  // Set the initial speeds; we want to drop very fast with only a small amount of
-  // left to right as we're coming into the screen. The brake height specifies at
-  // what point we start slowing down. Visually, this happens at around the time
-  // the parachute deploys.
-  dropper.xSpeed = Utils.randomFloatInRange(3, 5);
-  dropper.ySpeed = Utils.randomFloatInRange(8, 10);
-  dropper.brakeHeight = Utils.randomIntInRange(1, 8);
-
-  // dropper.x = 300;
-  // dropper.y = 200;
-  // dropper.xSpeed = 0;
-  // dropper.ySpeed = 0;
-
-  // Loser: Right edge of emote is coindent with the left edge of the target;
-  //        must overlap by at least one pixel.
-  // dropper.x = target.x - emote.x - emote.width;
-
-  // Winner: Now the edge overlaps by 1.
-  // dropper.x = target.x - emote.x - emote.width + 1;
-
-  // Loser: Left edge of emote is coincident with the right edge of the target;
-  //        must overlap by at least one pixel.
-  // dropper.x = target.x + target.width - ((parachute.width - emote.width) / 2);
-
-  // Winner: Now the edge overlaps by 1
-  // dropper.x = target.x + target.width - ((parachute.width - emote.width) / 2) - 1;
-
-  // Winner, best possible score, the emote is perfectly centered in the target.
-  // dropper.x = target.x + (target.width / 2) - (emote.width / 2) - emote.x;
-
-  // dropper.x = Utils.randomIntInRange(
-  //   target.x - emote.x - emote.width + 1,
-  //   target.x + target.width - ((parachute.width - emote.width) / 2) - 1
-  //   );
-
-  // Randomly determine what direction we're moving.
-  if (Utils.randomFloatInRange(0, 1) <= 0.5) {
-    dropper.xSpeed *= -1;
-  }
-
-  return dropper;
+  return new ParachuteDropper(viewport, 'dropper', 0, 0, target, parachuteSheet, emoteSheet, name);
 }
 
 /* Create and launch a new dropper by creating the instance and adding it to
