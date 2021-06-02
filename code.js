@@ -395,12 +395,6 @@ class ParachuteDropper extends SpriteContainer {
    * This is invoked from the constructor to randomize positions, but will also
    * be called when we get pulled out of the sprite pool and re-used. */
   randomize() {
-    // 5% of the time, play the wilhelm scream sound as we're dropping into the
-    // screen. The sound actually starts before the drop begins.
-    if (Utils.randomFloatInRange(0, 1) >= 0.95) {
-      this.play(this.sndScream);
-    }
-
     // We have not landed yet.
     this.landed = false;
 
@@ -559,13 +553,13 @@ class ParachuteDropper extends SpriteContainer {
       this.xSpeed = -1 * this.xSpeed;
 
     // When we touch down, indicate that we've landed so that we stop updating,
-    if (emoteY >= this.container.clientHeight - this.emote.height - (0.25 * target.height)) {
+    if (emoteY >= this.container.clientHeight - this.emote.height - (0.25 * this.target.height)) {
       this.land(deltaT);
 
       // In order to be considered a winner, the emote has to land so that at
       // least one pixel of it's bounding box is touching on the left or the
       // right side of the bounding box of the target.
-      if (emoteX > target.x - this.emote.width && emoteX < target.x + target.width) {
+      if (emoteX > this.target.x - this.emote.width && emoteX < this.target.x + this.target.width) {
         this.win();
       } else {
         this.lose();
@@ -617,12 +611,12 @@ class ParachuteDropper extends SpriteContainer {
   score() {
     // Calculate the positions that are the center of the target and the center
     // of the emote; note that the emote is relative to our bounding box.
-    const midTarget = target.x + (target.width / 2);
+    const midTarget = this.target.x + (this.target.width / 2);
     const midEmote = this.x + this.emote.x + (this.emote.width / 2);
 
     // The maximum possible distance apart that the emote and the center of the
     // target can be if this is a winner.
-    const maxDist = (target.width / 2) + (this.emote.width / 2);
+    const maxDist = (this.target.width / 2) + (this.emote.width / 2);
 
     // Calculate the score as a percentage of how far apart the two values are
     // from each other. This gives a score of 100 at the center an almost zero
@@ -631,89 +625,121 @@ class ParachuteDropper extends SpriteContainer {
   }
 }
 
-/* Make and return a parachute dropper item, containing a randomly selected
- * emote and parachute. This sets the dropper up with an initial position,
- * velocity, and other information, ready to be animated. */
-function makeDropper(name, emoteSheet, parachuteSheet, target) {
-  // Create a dropper wrapper and the sprites to be wrapped in it.
-  return new ParachuteDropper(viewport, 'dropper', 0, 0, target, parachuteSheet, emoteSheet, name);
-}
 
-/* Create and launch a new dropper by creating the instance and adding it to
- * the global sprite list. */
-// Launch a new dropper.
-function launch() {
-  sprites.push(makeDropper('SampleNickGoesHere', emoteSheet, parachuteSheet, target));
-}
+/* This class drives the entire simulation, and is responsible for the render
+ * loop running and moving all of the droppers. */
+class DropEngine {
+  /* Set up the overall state for the engine. This does not kick off the render
+   * loop though; do to that, you must invoke it manually one time. */
+  constructor() {
+    // Get the elements from the DOM that we're going to be interacting with.
+    // NOTE: None of this code is currently in a DOMReady guard, so this probably
+    // only works for local testing (which is ok, since that's what we're doing).
+    this.viewport = document.getElementById('viewport');
+    this.stats = document.getElementById('stats');
+    this.button = document.getElementById('button');
 
-/* Render this frame; this will keep calling itself in a loop as long as the
- * animation should be running. */
-function renderLoop() {
-  // Schedule another call for the next frame.
-  if (running === true) {
-    window.requestAnimationFrame(renderLoop);
+    // The list of sprites that we're updating.
+    this.sprites = [];
+
+    // For tracking the frame timing and frame rate. This is also used to
+    // provide a time delta in update calls to sprites that need time
+    // information.
+    this.thisFrameTime = new Date().getTime();
+    this.lastFrameTime = 0;
+    this.frameCount = 0;
+    this.elapsedTime = 0;
+    this.fps = 0;
+
+    // As long as this is true, the animation loop will keep running.
+    //
+    // In the final version, the render loop should only run while there are
+    // sprites simulating and for a period after all simuations cease.
+    //
+    // For now, it's just always running.
+    this.running = true;
+
+    // Create the sprite sheets for our test emotes and the parachute sprites.
+    this.emoteSheet = new SpriteSheet('emote', 280, 224, 56, 56);
+    this.parachuteSheet = new SpriteSheet('parachute', 360, 360, 120, 120);
+    this.targetSheet = new SpriteSheet('target', 390, 110, 390, 110);
+
+    // Create the target that the droppers are aiming for.
+    this.target = new Target(this.viewport, this.targetSheet,
+      Utils.randomIntInRange(
+        this.emoteSheet.spriteW * 1.5,
+        this.viewport.clientWidth - this.targetSheet.spriteW - (this.emoteSheet.spriteW * 1.5)
+      ),
+      this.viewport.clientHeight - (0.75 * this.targetSheet.spriteH));
+
+    this.sprites.push(this.target);
   }
 
-  // Track the framerate and frame timings.
-  frameCount++;
+  /* Create and launch a parachute dropper in the viewport, using the given
+   * name, or a placeholder name if one is not provided. */
+  launch(name) {
+    name = name || 'SampleNickGoesHere';
+    const dropper = new ParachuteDropper(this.viewport, 'dropper', 0, 0, this.target, this.parachuteSheet, this.emoteSheet, name);
 
-  lastFrameTime = thisFrameTime;
-  thisFrameTime = new Date().getTime();
-  const deltaT = thisFrameTime - lastFrameTime;
-  elapsedTime += deltaT;
-  fps = 1000 / deltaT;
+    // 5% of the time, play the wilhelm scream sound as we're dropping into the
+    // screen. The sound actually starts before the drop begins.
+    if (Utils.randomFloatInRange(0, 1) >= 0.95) {
+      dropper.play(dropper.sndScream);
+    }
 
-  if (elapsedTime >= 1000) {
-    stats.innerHTML = `${frameCount} fps`;
-    elapsedTime -= 1000;
-    frameCount = 0;
+    // Add this dropper to the global sprite list so that it will animate.
+    this.sprites.push(dropper);
   }
 
-  // Trigger an update on all sprites and sprite containers added to the main
-  // sprite list. Any containers are responsible for updating their children,
-  // if they're not also in this list.
-  for (let i = 0; i < sprites.length; i++) {
-    if (sprites[i].parent === undefined) {
-      sprites[i].update(deltaT);
+
+  /* Render this frame; this will keep calling itself in a loop as long as the
+   * animation should be running. */
+  renderLoop() {
+    // Schedule another call for the next frame.
+    if (this.running === true) {
+      window.requestAnimationFrame(()=> this.renderLoop());
+    }
+
+    // Track the framerate and frame timings.
+    this.frameCount++;
+
+    this.lastFrameTime = this.thisFrameTime;
+    this.thisFrameTime = new Date().getTime();
+    const deltaT = this.thisFrameTime - this.lastFrameTime;
+    this.elapsedTime += deltaT;
+    this.fps = 1000 / deltaT;
+
+    if (this.elapsedTime >= 1000) {
+      this.stats.innerHTML = `${this.frameCount} fps`;
+      this.elapsedTime -= 1000;
+      this.frameCount = 0;
+    }
+
+    // Trigger an update on all sprites and sprite containers added to the main
+    // sprite list. Any containers are responsible for updating their children,
+    // if they're not also in this list.
+    for (let i = 0; i < this.sprites.length; i++) {
+      if (this.sprites[i].parent === undefined) {
+        this.sprites[i].update(deltaT);
+      }
     }
   }
 }
 
-// Get the elements from the DOM that we're going to be interacting with.
-// NOTE: None of this code is currently in a DOMReady guard, so this probably
-// only works for local testing (which is ok, since that's what we're doing).
-const viewport = document.getElementById('viewport');
-const stats = document.getElementById('stats');
-const button = document.getElementById('button');
+function dropperDOMReady(func) {
+  // Is the DOM already available to us?
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    setTimeout(func, 1);
+  } else {
+    document.addEventListener("DOMContentLoaded", func);
+  }
+}
 
-let sprites = [];
+dropperDOMReady(() => {
+  const button = document.getElementById('button');
 
-// For tracking how fast we're going.
-let thisFrameTime = new Date().getTime();
-let lastFrameTime = 0;
-let frameCount = 0;
-let elapsedTime = 0;
-let fps = 0;
+  const engine = new DropEngine();
+  button.addEventListener('click', e => engine.launch());
 
-// Is the animation running? In the final version we want the render loop to
-// only run while there are sprites simulating. For now, it's just always
-// going.
-let running = true;
-
-// Create the sprite sheets for our test emotes and the parachute sprites.
-const emoteSheet = new SpriteSheet('emote', 280, 224, 56, 56);
-const parachuteSheet = new SpriteSheet('parachute', 360, 360, 120, 120);
-const targetSheet = new SpriteSheet('target', 390, 110, 390, 110);
-
-// Create the target that the droppers are aiming for.
-const target = new Target(viewport, targetSheet,
-  Utils.randomIntInRange(
-    emoteSheet.spriteW * 1.5,
-    viewport.clientWidth - targetSheet.spriteW - (emoteSheet.spriteW * 1.5)
-  ),
-  viewport.clientHeight - (0.75 * targetSheet.spriteH));
-
-sprites.push(target);
-
-// Start everything going.
-renderLoop();
+  engine.renderLoop();
+});
