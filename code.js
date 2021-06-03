@@ -80,6 +80,9 @@ class Entity {
     this.element = document.createElement("div");
     this.style = this.element.style;
 
+    // By default we're not dead.
+    this.dead = false;
+
     // If we have a sprite sheet, set up our visual display as well as our
     // dimensions. Otherwise, we have no size.
     if (this.sheet) {
@@ -223,12 +226,6 @@ class SpriteContainer extends Entity {
     this.reposition();
   }
 
-  /* Add a new child sprite to our internal list of children. */
-  addChild(sprite) {
-    sprite.parent = this;
-    this.sprites.push(sprite);
-  }
-
   /* On every frame update, send an update request to all registered children
    * so that they can update themselves. */
   update(deltaT) {
@@ -329,7 +326,6 @@ class ParachuteDropper extends SpriteContainer {
 
     // Initialize the box that will store the name of this dropper; it should be
     // centered in the overall dropper.
-    this.nameBox.element.innerText = name;
     this.nameBox.setPos(
       (this.element.clientWidth / 2) - (this.nameBox.element.clientWidth / 2),
       this.parachute.height * 0.666
@@ -369,7 +365,7 @@ class ParachuteDropper extends SpriteContainer {
     this.sndScream.playbackRate = Utils.randomFloatInRange(0.75, 2.0);
     this.sndScream.preservesPitch = false;
 
-    // Attach the sounds to our selement.
+    // Attach the sounds to our element.
     this.element.appendChild(this.sndParachute);
     this.element.appendChild(this.sndLand);
     this.element.appendChild(this.sndWinner);
@@ -385,8 +381,33 @@ class ParachuteDropper extends SpriteContainer {
     this.width = 120;
     this.height = 162;
 
+    // Handle the situation where animations we've applied
+    this.element.addEventListener('animationend', e => this.animationEnd(e));
+
     // With all of our initial setup done, randomize everything for a new drop.
-    this.randomize();
+    this.randomize(name);
+  }
+
+  /* Whenvever any of the CSS animations we apply to the container finish,
+   * this will get invoked to tell us. We use this to take various actions as
+   * animations are completed. */
+  animationEnd(event) {
+    // If we have just finished fading out the dropper as a whole, remove it
+    // from the DOM.
+    if (event.animationName === 'fadeOutDropper') {
+      EntityPool.add(this);
+
+      this.hide();
+
+      // Remove all of the classes that are hiding our component parts.
+      this.element.classList.toggle('fadeOut');
+      this.element.classList.toggle('ghost');
+      this.element.classList.toggle('loser');
+      this.nameBox.element.classList.toggle('ghost');
+
+      // This entity is now dead;
+      this.dead = true;
+    }
   }
 
   /* Initially inialize (or re-initialize, if we are reusing this dropper) the
@@ -394,7 +415,10 @@ class ParachuteDropper extends SpriteContainer {
    *
    * This is invoked from the constructor to randomize positions, but will also
    * be called when we get pulled out of the sprite pool and re-used. */
-  randomize() {
+  randomize(name) {
+    // Set the name for this dropper.
+    this.nameBox.element.innerText = name;
+
     // We have not landed yet.
     this.landed = false;
 
@@ -404,9 +428,9 @@ class ParachuteDropper extends SpriteContainer {
     this.brakeHeight = Utils.randomIntInRange(1, 8);
     this.deployed = false;
 
-    // We have not won and we're not dead (and thus, the death clock is empty).
+    // We have not won and we're not complete (and thus, the death clock is empty).
     this.winner = false;
-    this.dead = false;
+    this.dropComplete = false;
     this.deathClock = 0;
 
     // We have not scored yet.
@@ -432,24 +456,24 @@ class ParachuteDropper extends SpriteContainer {
 
     // Loser: Right edge of emote is coindent with the left edge of the target;
     //        must overlap by at least one pixel.
-    // this.x = target.x - emote.x - emote.width;
+    // this.x = this.target.x - this.emote.x - this.emote.width;
 
     // Winner: Now the edge overlaps by 1.
-    // this.x = target.x - emote.x - emote.width + 1;
+    // this.x = this.target.x - this.emote.x - this.emote.width + 1;
 
     // Loser: Left edge of emote is coincident with the right edge of the target;
     //        must overlap by at least one pixel.
-    // this.x = target.x + target.width - ((parachute.width - emote.width) / 2);
+    // this.x = this.target.x + this.target.width - ((this.parachute.width - this.emote.width) / 2);
 
     // Winner: Now the edge overlaps by 1
-    // this.x = target.x + target.width - ((parachute.width - emote.width) / 2) - 1;
+    // this.x = this.target.x + this.target.width - ((this.parachute.width - this.emote.width) / 2) - 1;
 
     // Winner, best possible score, the emote is perfectly centered in the target.
-    // this.x = target.x + (target.width / 2) - (emote.width / 2) - emote.x;
+    // this.x = this.target.x + (this.target.width / 2) - (this.emote.width / 2) - this.emote.x;
 
     // this.x = Utils.randomIntInRange(
-    //   target.x - emote.x - emote.width + 1,
-    //   target.x + target.width - ((parachute.width - emote.width) / 2) - 1
+    //   this.target.x - this.emote.x - this.emote.width + 1,
+    //   this.target.x + target.width - ((this.parachute.width - this.emote.width) / 2) - 1
     //   );
 
     // Randomly determine what direction we're moving.
@@ -463,17 +487,17 @@ class ParachuteDropper extends SpriteContainer {
    * Handle the logic related to the dropper if it'a landed at the bottom of
    * the screen and is no longer moving. */
   landed_update(deltaT) {
-    // We don't need to do anything special if we're a winner or already dead.
-    if (this.winner === true || this.dead === true) {
+    // We don't need to do anything special if we're a winner or already done.
+    if (this.winner === true || this.dropComplete === true) {
       return;
     }
 
     // Count up the death clock; when we've hit the threshold, mark ourselves
-    // as dead and trigger the CSS classes that will make us fade out and off
+    // as done and trigger the CSS classes that will make us fade out and off
     // the bottom of the screen.
     this.deathClock += deltaT;
     if (this.deathClock >= 5 * 1000) {
-      this.dead = true;
+      this.dropComplete = true;
       this.element.classList.toggle('fadeOut');
       this.element.classList.toggle('ghost');
     }
@@ -626,6 +650,24 @@ class ParachuteDropper extends SpriteContainer {
 }
 
 
+/* A simple class for keeping a pool of previously created entity objects so
+ * that they can be reused in the future. */
+class EntityPool {
+  static pool = [];
+
+  /* Add the given entity to the entity pool. */
+  static add(entity) {
+    EntityPool.pool.push(entity);
+  }
+
+  /* Get an entity out of the pool; this may return undefined if there are no
+   * items in the pool. */
+  static get() {
+    return EntityPool.pool.pop();
+  }
+}
+
+
 /* This class drives the entire simulation, and is responsible for the render
  * loop running and moving all of the droppers. */
 class DropEngine {
@@ -679,7 +721,16 @@ class DropEngine {
    * name, or a placeholder name if one is not provided. */
   launch(name) {
     name = name || 'SampleNickGoesHere';
-    const dropper = new ParachuteDropper(this.viewport, 'dropper', 0, 0, this.target, this.parachuteSheet, this.emoteSheet, name);
+
+    // Try to get a dropper out of the pool.
+    let dropper = EntityPool.get();
+    if (dropper === undefined) {
+      dropper = new ParachuteDropper(this.viewport, 'dropper', 0, 0, this.target, this.parachuteSheet, this.emoteSheet, name);
+    } else {
+      dropper.dead = false;
+      dropper.randomize(name);
+      dropper.display();
+    }
 
     // 5% of the time, play the wilhelm scream sound as we're dropping into the
     // screen. The sound actually starts before the drop begins.
@@ -697,7 +748,7 @@ class DropEngine {
   renderLoop() {
     // Schedule another call for the next frame.
     if (this.running === true) {
-      window.requestAnimationFrame(()=> this.renderLoop());
+      window.requestAnimationFrame(() => this.renderLoop());
     }
 
     // Track the framerate and frame timings.
@@ -718,14 +769,17 @@ class DropEngine {
     // Trigger an update on all sprites and sprite containers added to the main
     // sprite list. Any containers are responsible for updating their children,
     // if they're not also in this list.
-    for (let i = 0; i < this.sprites.length; i++) {
-      if (this.sprites[i].parent === undefined) {
-        this.sprites[i].update(deltaT);
+    for (let i = this.sprites.length - 1; i >= 0 ; i--) {
+      this.sprites[i].update(deltaT);
+      if (this.sprites[i].dead) {
+        this.sprites.splice(i, 1);
       }
     }
   }
 }
 
+/* Calls the provided function when the DOM is fully loaded. It's safe to call
+ * this at any point, even if the DOM is already available. */
 function dropperDOMReady(func) {
   // Is the DOM already available to us?
   if (document.readyState === "complete" || document.readyState === "interactive") {
@@ -735,6 +789,7 @@ function dropperDOMReady(func) {
   }
 }
 
+/* Trigger the game engine to start when the DOM is fully available. */
 dropperDOMReady(() => {
   const button = document.getElementById('button');
 
