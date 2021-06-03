@@ -315,8 +315,6 @@ class ParachuteDropper extends SpriteContainer {
     this.nameBox = new SpriteContainer(this.element, 'nickname');
     this.scoreBox = new SpriteContainer(this.element, 'score');
 
-    // Add the class to the parachute that hides it from view
-    this.parachute.element.classList.toggle('hide');
 
     // Set the emote position offset so that it appears centered under the
     // parachute. It's horizontally centered and vertically 1/4 of it's own height
@@ -337,7 +335,6 @@ class ParachuteDropper extends SpriteContainer {
       (this.element.clientWidth / 2) - (this.scoreBox.element.clientWidth / 2),
       this.parachute.height * 0.5
     );
-    this.scoreBox.element.classList.toggle('hide');
 
     // The sound that plays when the parachute is deployed.
     this.sndParachute = document.createElement("audio");
@@ -395,17 +392,11 @@ class ParachuteDropper extends SpriteContainer {
     // If we have just finished fading out the dropper as a whole, remove it
     // from the DOM.
     if (event.animationName === 'fadeOutDropper') {
+      // Add the entity to the pool, then remove it from the DOM
       EntityPool.add(this);
-
       this.hide();
 
-      // Remove all of the classes that are hiding our component parts.
-      this.element.classList.toggle('fadeOut');
-      this.element.classList.toggle('ghost');
-      this.element.classList.toggle('loser');
-      this.nameBox.element.classList.toggle('ghost');
-
-      // This entity is now dead;
+      // Flag it as dead so the render loop will cull it from the update list.
       this.dead = true;
     }
   }
@@ -416,8 +407,29 @@ class ParachuteDropper extends SpriteContainer {
    * This is invoked from the constructor to randomize positions, but will also
    * be called when we get pulled out of the sprite pool and re-used. */
   randomize(name) {
-    // Set the name for this dropper.
+    // Ensure that the parachute is hidden until it gets deployed.
+    this.parachute.element.classList.add('hide');
+
+    // The name box should not be ghosted, which it might be if this dropper
+    // was previously a loser.
+    this.nameBox.element.classList.remove('ghost');
+
+    // The score box should be hidden and should not be fading in.
+    this.scoreBox.element.classList.add('hide');
+    this.scoreBox.element.classList.remove('fadeIn');
+
+    // Our element should not be ghosted, faded, swawing or marked as a loser.
+    this.element.classList.remove('ghost', 'sway', 'loser', 'fadeOut');
+
+    // Display the name and also save it as a field in the class; external code
+    // may want to know our name (say to constrain droppers with the same name)
+    // and this makes it easier to pull them out.
     this.nameBox.element.innerText = name;
+    this.name = name;
+
+    // Randomize the frame used for the emote and the parachute.
+    this.parachute.setFrame(this.parachute.sheet.randomFrame());
+    this.emote.setFrame(this.emote.sheet.randomFrame());
 
     // We have not landed yet.
     this.landed = false;
@@ -471,9 +483,10 @@ class ParachuteDropper extends SpriteContainer {
     // Winner, best possible score, the emote is perfectly centered in the target.
     // this.x = this.target.x + (this.target.width / 2) - (this.emote.width / 2) - this.emote.x;
 
+    // Winner, random score; only spawns within the range of the target.
     // this.x = Utils.randomIntInRange(
     //   this.target.x - this.emote.x - this.emote.width + 1,
-    //   this.target.x + target.width - ((this.parachute.width - this.emote.width) / 2) - 1
+    //   this.target.x + this.target.width - ((this.parachute.width - this.emote.width) / 2) - 1
     //   );
 
     // Randomly determine what direction we're moving.
