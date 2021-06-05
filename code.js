@@ -440,6 +440,11 @@ class ParachuteDropper extends SpriteContainer {
     this.brakeHeight = Utils.randomIntInRange(1, 8);
     this.deployed = false;
 
+    // When this is true, the chute has been cut from the dropper; when this is
+    // the case it accelerates downward during the drop. The chute can't be
+    // deployed if it's been cut.
+    this.chuteCut = false;
+
     // We have not won and we're not complete (and thus, the death clock is empty).
     this.winner = false;
     this.dropComplete = false;
@@ -537,19 +542,33 @@ class ParachuteDropper extends SpriteContainer {
     this.element.classList.toggle('sway');
   }
 
+  /* Cuts the chute on this dropper if it's been deployed, or stops it from
+   * actually being deployed if it happens soon enough. */
+  cut_chute() {
+    // If we're already deployed, then we need to stop swaying and remove the
+    // parachute, since it can no longer save us.
+    if (this.deployed === true) {
+      this.element.classList.remove('sway');
+      this.parachute.element.classList.add('hide');
+    }
+
+    // Consider this chute cut now.
+    this.chuteCut = true;
+  }
+
   /* Called from update()
    *
    * Called when we land on the bottom of the screen. */
   land(deltaT) {
-    // Mark that we've landed.
+    // Mark that we've landed and play a sound.
     this.landed = true;
+    this.play(this.sndLand);
 
     // Now that we have landed, we should no longer sway, and our parachute
     // should no longer be visible.
-    this.element.classList.toggle('sway');
-    if (this.parachute !== null) {
-      this.parachute.element.classList.toggle('hide');
-      this.play(this.sndLand);
+    this.element.classList.remove('sway');
+    if (this.parachute !== null && this.chuteCut === false) {
+      this.parachute.element.classList.remove('hide');
     }
   }
 
@@ -568,14 +587,21 @@ class ParachuteDropper extends SpriteContainer {
     this.x += this.xSpeed;
     this.y += this.ySpeed;
 
-    // If we're past the braking height, slow down until we hit a good threshold.
-    if (this.y >= this.brakeHeight && this.ySpeed > 0.5) {
+    // If we're past the braking height, slow down until we hit a good threshold;
+    // this only applies if he chute hasn't been cut.
+    if (this.chuteCut === false && this.y >= this.brakeHeight && this.ySpeed > 0.5) {
       this.ySpeed /= 1.05;
+    }
+
+    // If the chute has been cut, then we need to increase ourselves to TERMINAL
+    // VELOCITY.
+    if (this.chuteCut === true && this.ySpeed < 12) {
+      this.ySpeed *= 1.08;
     }
 
     // If the parachute is not deployed yet, but we're on the screen, then
     // deploy now.
-    if (this.deployed === false && this.y >= 0) {
+    if (this.deployed === false && this.chuteCut === false && this.y >= 0) {
       this.deploy_chute(deltaT);
     }
 
@@ -734,6 +760,16 @@ class DropEngine {
    * name, or a placeholder name if one is not provided. */
   launch(name) {
     name = name || 'SampleNickGoesHere';
+
+    // Scan existing droppers to see if there's one with this name. If there is,
+    // then cut it's chute. Optionally this could also just do nothing so that a
+    // user can only have a single dropper going, or it could be removed
+    // entirely.
+    for (let i = 0 ; i < this.sprites.length ; i++) {
+      if (this.sprites[i].name === name) {
+        return this.sprites[i].cut_chute();
+      }
+    }
 
     // Try to get a dropper out of the pool.
     let dropper = EntityPool.get();
