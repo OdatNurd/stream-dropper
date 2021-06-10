@@ -408,7 +408,8 @@ class ParachuteDropper extends SpriteContainer {
    * be called when we get pulled out of the sprite pool and re-used. */
   randomize(name) {
     // Ensure that the parachute is hidden until it gets deployed.
-    this.parachute.element.classList.add('hide');
+    this.parachute.element.classList.add('ghost');
+    this.parachute.element.classList.remove('release');
 
     // The name box should not be ghosted, which it might be if this dropper
     // was previously a loser.
@@ -534,7 +535,7 @@ class ParachuteDropper extends SpriteContainer {
     // Display the parachute and enable the animation that causes it to  scale
     // up into existence.
     if (this.parachute !== null) {
-      this.parachute.element.classList.toggle('hide');
+      this.parachute.element.classList.toggle('ghost');
       this.parachute.element.classList.toggle('deploy');
 
       // Play a sound.
@@ -552,7 +553,7 @@ class ParachuteDropper extends SpriteContainer {
     // parachute, since it can no longer save us.
     if (this.deployed === true) {
       this.element.classList.remove('sway');
-      this.parachute.element.classList.add('hide');
+      this.parachute.element.classList.add('ghost', 'release');
     }
 
     // Consider this chute cut now.
@@ -571,7 +572,7 @@ class ParachuteDropper extends SpriteContainer {
     // should no longer be visible.
     this.element.classList.remove('sway');
     if (this.parachute !== null && this.chuteCut === false) {
-      this.parachute.element.classList.add('hide');
+      this.parachute.element.classList.add('ghost', 'release');
     }
   }
 

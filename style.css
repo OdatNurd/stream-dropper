@@ -97,6 +97,27 @@ div {
   transform-origin: 50% 100%;
 }
 
+
+@keyframes releaseChute {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(12px, -56px) scale(0.8);
+  }
+}
+
+/* An animation that can be applied to translate something up and away from it's
+ * current location while also fading out. This is similar to the animation used
+ * when a dropper dies, but in the other direction. */
+.release {
+  animation: releaseChute 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+  transform-origin: 50% 100%;
+}
+
+
 @keyframes sway {
   0% {
     transform: rotate(8deg);
