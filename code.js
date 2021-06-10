@@ -342,6 +342,12 @@ class ParachuteDropper extends SpriteContainer {
     this.sndParachute.playbackRate = Utils.randomFloatInRange(0.5, 2);
     this.sndParachute.preservesPitch = false;
 
+    // The sound that plays when we cut the chute and start a free fall drop.
+    this.sndSnip = document.createElement("audio");
+    this.sndSnip.src = 'resources/sounds/snip.ogg';
+    this.sndSnip.playbackRate = Utils.randomFloatInRange(0.5, 2);
+    this.sndSnip.preservesPitch = false;
+
     // The sound that plays when we eventually land. This is currently random
     // selected, but should probably be based on a selected terrain. There could
     // also be a distinct sound played for not landing on the target at all.
@@ -411,6 +417,10 @@ class ParachuteDropper extends SpriteContainer {
     this.parachute.element.classList.add('ghost');
     this.parachute.element.classList.remove('release');
 
+    // Make sure that the emote is positioned correctly if it was mid-cut
+    // during a drop.
+    this.emote.element.classList.remove('cut', 'cutDrop');
+
     // The name box should not be ghosted, which it might be if this dropper
     // was previously a loser.
     this.nameBox.element.classList.remove('ghost');
@@ -441,10 +451,15 @@ class ParachuteDropper extends SpriteContainer {
     this.brakeHeight = Utils.randomIntInRange(1, 8);
     this.deployed = false;
 
-    // When this is true, the chute has been cut from the dropper; when this is
-    // the case it accelerates downward during the drop. The chute can't be
-    // deployed if it's been cut.
-    this.chuteCut = false;
+    // These track whether or not a cut has happened on the chute. When a cut is
+    // requested, the flag is set and handling will count down a timer until the
+    // cut actually happens. Once the clock runs out, the cut is actually
+    // triggered and the chute will be removed and the dropper goes into free
+    // fall.
+    this.cutRequested = false;
+    this.cutTriggered = false;
+    // this.cutClock = 5000;
+    this.cutClock = Utils.randomFloatInRange(750, 1500);
 
     // We have not won and we're not complete (and thus, the death clock is empty).
     this.winner = false;
@@ -527,6 +542,24 @@ class ParachuteDropper extends SpriteContainer {
 
   /* Called from update()
    *
+   * Handle the logic related to the dropper if it's chute has been cut. This
+   * will count down the cut clock, and trigger the release of the parachute
+   * when it actually counts down. */
+  cut_update(deltaT) {
+    this.cutClock -= deltaT;
+
+    // If the clock is out, we can jettison the parachute now.
+    if (this.cutClock <= 0) {
+      this.element.classList.remove('sway');
+      this.parachute.element.classList.add('ghost', 'release');
+
+      // Trigger the actual drop from the cut now.
+      this.cutTriggered = true;
+    }
+  }
+
+  /* Called from update()
+   *
    * Deploy the chute on this dropper; this triggers the appropriate animations
    * to make the chute look like it's deployed. */
   deploy_chute(deltaT) {
@@ -549,15 +582,17 @@ class ParachuteDropper extends SpriteContainer {
   /* Cuts the chute on this dropper if it's been deployed, or stops it from
    * actually being deployed if it happens soon enough. */
   cut_chute() {
-    // If we're already deployed, then we need to stop swaying and remove the
-    // parachute, since it can no longer save us.
-    if (this.deployed === true) {
-      this.element.classList.remove('sway');
-      this.parachute.element.classList.add('ghost', 'release');
+    if (this.cutRequested === true) {
+      return;
     }
 
+    // Visibly make the emote drop slightly, and then play a sound to let the
+    // players know that a cut is in progress.
+    this.emote.element.classList.add('cut', 'cutDrop');
+    this.play(this.sndSnip);
+
     // Consider this chute cut now.
-    this.chuteCut = true;
+    this.cutRequested = true;
   }
 
   /* Called from update()
@@ -571,7 +606,11 @@ class ParachuteDropper extends SpriteContainer {
     // Now that we have landed, we should no longer sway, and our parachute
     // should no longer be visible.
     this.element.classList.remove('sway');
-    if (this.parachute !== null && this.chuteCut === false) {
+
+    // If the emote was cut, it had these assigned, so remove them.
+    this.emote.element.classList.remove('cut', 'cutDrop');
+
+    if (this.parachute !== null && this.cutRequested === false) {
       this.parachute.element.classList.add('ghost', 'release');
     }
   }
@@ -587,25 +626,31 @@ class ParachuteDropper extends SpriteContainer {
       return this.landed_update(deltaT);
     }
 
+    // If a cut has been requested but hasn't happened yet, tick the clock for
+    // it.
+    if (this.cutRequested === true && this.cutTriggered === false) {
+      this.cut_update(deltaT);
+    }
+
     // Move ourselves on the screen.
     this.x += this.xSpeed;
     this.y += this.ySpeed;
 
     // If we're past the braking height, slow down until we hit a good threshold;
     // this only applies if he chute hasn't been cut.
-    if (this.chuteCut === false && this.y >= this.brakeHeight && this.ySpeed > 0.5) {
+    if (this.cutTriggered === false && this.y >= this.brakeHeight && this.ySpeed > 0.5) {
       this.ySpeed /= 1.05;
     }
 
     // If the chute has been cut, then we need to increase ourselves to TERMINAL
     // VELOCITY.
-    if (this.chuteCut === true && this.ySpeed < 12) {
+    if (this.cutTriggered === true && this.ySpeed < 12) {
       this.ySpeed *= 1.08;
     }
 
     // If the parachute is not deployed yet, but we're on the screen, then
     // deploy now.
-    if (this.deployed === false && this.chuteCut === false && this.y >= 0) {
+    if (this.deployed === false && this.cutRequested === false && this.y >= 0) {
       this.deploy_chute(deltaT);
     }
 

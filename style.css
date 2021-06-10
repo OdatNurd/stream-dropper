@@ -182,6 +182,30 @@ div {
 }
 
 
+@keyframes cutDropper {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(14px);
+  }
+}
+
+/* An animation that can be applied to an emote to cause it to drop down
+ * visibly while still being attached to the parachute. This makes it more
+ * visually obvious that a cut is in progress on the chute. */
+.cutDrop {
+  animation: cutDropper 0.75s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+}
+
+
+/* This is applied to emotes when the cutDrop animation is playing so that when
+ * the animation is complete, the position remains where it is. */
+.cut {
+  transform: translateY(14px);
+}
+
+
 /* This class is applied to the sprite group that contains the parachute and
  * the emote that's being dropped. */
 .dropper {
