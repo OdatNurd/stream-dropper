@@ -494,6 +494,9 @@ class ParachuteDropper extends SpriteContainer {
     //   this.target.x + this.target.width - ((this.parachute.width - this.emote.width) / 2) - 1
     //   );
 
+    // If using the above, reset the position to where it currently is now.
+    // this.setPos(this.x, this.y);
+
     // Randomly determine what direction we're moving.
     if (Utils.randomFloatInRange(0, 1) <= 0.5) {
       this.xSpeed *= -1;
@@ -568,7 +571,7 @@ class ParachuteDropper extends SpriteContainer {
     // should no longer be visible.
     this.element.classList.remove('sway');
     if (this.parachute !== null && this.chuteCut === false) {
-      this.parachute.element.classList.remove('hide');
+      this.parachute.element.classList.add('hide');
     }
   }
 
