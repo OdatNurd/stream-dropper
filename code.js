@@ -391,19 +391,24 @@ class ParachuteDropper extends SpriteContainer {
     this.randomize(name);
   }
 
+  /* Kills this entity by adding it to the entity pool, removing it from the DOM
+   * and requesting that the render loop cull it from the list. */
+  kill() {
+    EntityPool.add(this);
+    this.hide();
+
+    // Flag it as dead so the render loop will cull it from the update list.
+    this.dead = true;
+  }
+
   /* Whenvever any of the CSS animations we apply to the container finish,
    * this will get invoked to tell us. We use this to take various actions as
    * animations are completed. */
   animationEnd(event) {
     // If we have just finished fading out the dropper as a whole, remove it
-    // from the DOM.
+    // from the DOM and the sprite list.
     if (event.animationName === 'fadeOutDropper') {
-      // Add the entity to the pool, then remove it from the DOM
-      EntityPool.add(this);
-      this.hide();
-
-      // Flag it as dead so the render loop will cull it from the update list.
-      this.dead = true;
+      this.kill();
     }
   }
 
@@ -780,13 +785,16 @@ class DropEngine {
     this.elapsedTime = 0;
     this.fps = 0;
 
-    // As long as this is true, the animation loop will keep running.
+    // As long as this is true, the animation loop will keep running. At initial
+    // load time, the loop is not running. It starts when the first drop
+    // happens.
     //
-    // In the final version, the render loop should only run while there are
-    // sprites simulating and for a period after all simuations cease.
-    //
-    // For now, it's just always running.
-    this.running = true;
+    // While the loop is running, the idleTime is the amount of time the game
+    // has spent rendering frames with no more than two or fewer entities in the
+    // sprite list (the target and possibly a winner). When it hits a predefined
+    // state, the render loop stops.
+    this.running = false;
+    this.idleTime = 0;
 
     // Create the sprite sheets for our test emotes and the parachute sprites.
     this.emoteSheet = new SpriteSheet('emote', 280, 224, 56, 56);
@@ -801,12 +809,25 @@ class DropEngine {
       ),
       this.viewport.clientHeight - (0.75 * this.targetSheet.spriteH));
 
+    // The engine isn't running at launch, so make sure that the target is
+    // hiding.
+    this.target.element.classList.add('hide');
+
     this.sprites.push(this.target);
   }
 
   /* Create and drop a parachute dropper in the viewport, using the given
    * name, or a placeholder name if one is not provided. */
   drop(name, emoteId) {
+    // We're about to drop; if the render loop isn't already running, then we
+    // should start it now.
+    if (this.running === false) {
+      this.target.element.classList.remove('hide');
+
+      this.running = true;
+      this.renderLoop();
+    }
+
     name = name || 'SampleNickGoesHere';
 
     // if (Utils.randomFloatInRange(0, 1) >= 0.5) {
@@ -870,6 +891,12 @@ class DropEngine {
    * cut it's parachute so that it drops quicker. This adds a small amount of
    * skill to the game. */
   cut(name) {
+    // A cut can't happen if the render loop isn't running, because in that case
+    // there aren't any droppers.
+    if (this.running === false) {
+      return;
+    }
+
     name = name || 'SampleNickGoesHere';
 
     // Scan existing droppers to see if there's one with this name. If there is,
@@ -884,11 +911,6 @@ class DropEngine {
   /* Render this frame; this will keep calling itself in a loop as long as the
    * animation should be running. */
   renderLoop() {
-    // Schedule another call for the next frame.
-    if (this.running === true) {
-      window.requestAnimationFrame(() => this.renderLoop());
-    }
-
     // Track the framerate and frame timings.
     this.frameCount++;
 
@@ -904,6 +926,20 @@ class DropEngine {
       this.frameCount = 0;
     }
 
+    // If we have been idle for an appropriate period of time, then stop the
+    // render loop from running; this also needs to kill all items that are
+    // sitting on the target.
+    if (this.idleTime >= 1000 * 60 * 1.5) {
+    // if (this.idleTime >= 5000) {
+      for (let i = 0 ; i < this.target.droppers.length ; i++) {
+        this.target.droppers[i].kill();
+      }
+      this.target.droppers = [];
+
+      this.target.element.classList.add('hide');
+      this.running = false;
+    }
+
     // Trigger an update on all sprites and sprite containers added to the main
     // sprite list. Any containers are responsible for updating their children,
     // if they're not also in this list.
@@ -912,6 +948,23 @@ class DropEngine {
       if (this.sprites[i].dead) {
         this.sprites.splice(i, 1);
       }
+    }
+
+    // If there are two or more sprites AND there are active droppers, make
+    // the idle time zero because the game is still running.
+    //
+    // When there are two sprites or less, then the game might be idle UNLESS
+    // one of the sprites is actively dropping.
+    this.idleTime = (this.sprites.length >= 2 && this.target.droppers.length != 1)
+        ? 0
+        : this.idleTime + deltaT;
+
+    // Schedule another call for the next frame as long as we're still running.
+    if (this.running === true) {
+      window.requestAnimationFrame(() => this.renderLoop());
+    } else {
+      this.stats.innerHTML = '-- fps';
+      this.idleTime = 0;
     }
   }
 }
@@ -936,5 +989,5 @@ dropperDOMReady(() => {
   dropButton.addEventListener('click', e => engine.drop());
   cutButton.addEventListener('click', e => engine.cut());
 
-  engine.renderLoop();
+  // engine.renderLoop();
 });
