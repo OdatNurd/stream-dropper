@@ -438,9 +438,8 @@ class ParachuteDropper extends SpriteContainer {
     this.nameBox.element.innerText = name;
     this.name = name;
 
-    // Randomize the frame used for the emote and the parachute.
+    // Randomize the frame used for the parachute.
     this.parachute.setFrame(this.parachute.sheet.randomFrame());
-    this.emote.setFrame(this.emote.sheet.randomFrame());
 
     // We have not landed yet.
     this.landed = false;
@@ -807,8 +806,12 @@ class DropEngine {
 
   /* Create and drop a parachute dropper in the viewport, using the given
    * name, or a placeholder name if one is not provided. */
-  drop(name) {
+  drop(name, emoteId) {
     name = name || 'SampleNickGoesHere';
+
+    // if (Utils.randomFloatInRange(0, 1) >= 0.5) {
+    //   emoteId = '306898610';
+    // }
 
     // Scan existing droppers to see if there's one with this name. If there is,
     // then this user is not allowed to drop again, so leave.
@@ -826,6 +829,31 @@ class DropEngine {
       dropper.dead = false;
       dropper.randomize(name);
       dropper.display();
+    }
+
+    if (emoteId !== undefined) {
+      // For an emote ID, we need to make sure that the standard emote class is
+      // gone and that the custom twitch one is applied.
+      dropper.emote.element.classList.remove('emote');
+      dropper.emote.element.classList.add('twitch-emote');
+
+      // Apply a background image that will load the custom twitch emote.
+      dropper.emote.element.style.backgroundImage = `url(https://static-cdn.jtvnw.net/emoticons/v1/${emoteId}/2.0)`
+
+      // Make sure that frame 0 is applied, since this might have previously
+      // been a standard emote that wasn't on frame 0 and the background
+      // position might be wrong.
+      dropper.emote.setFrame(0)
+    } else {
+      // For no emote ID, ensure that we have the appropriate standard emote
+      // class applied. We also need to select a frame.
+      dropper.emote.element.classList.add('emote');
+      dropper.emote.element.classList.remove('twitch-emote');
+
+      // Remove any custom background we may have applied and ensure that we get
+      // a random emote picked.
+      dropper.emote.element.style.backgroundImage = null;
+      dropper.emote.setFrame(dropper.emote.sheet.randomFrame());
     }
 
     // 5% of the time, play the wilhelm scream sound as we're dropping into the

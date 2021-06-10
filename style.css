@@ -226,6 +226,17 @@ div {
   z-index: 1;
 }
 
+/* This class is applied to a sprite that is using a twitch emote; in that case
+ * it doesn't have a sprite sheet and instead has an enforced background image
+ * for which the URL is a twitch emote URL. */
+.twitch-emote {
+  /*border: 1px dashed red;*/
+  background-position: 0px 0px;
+  width:  56px;
+  height: 56px;
+  z-index: 1;
+}
+
 /* This class is applied to the sprite that represents the parachute; it sets
  * the sprite sheet image to be used. */
 .parachute {
