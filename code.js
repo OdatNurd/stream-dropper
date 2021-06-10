@@ -760,18 +760,16 @@ class DropEngine {
     this.sprites.push(this.target);
   }
 
-  /* Create and launch a parachute dropper in the viewport, using the given
+  /* Create and drop a parachute dropper in the viewport, using the given
    * name, or a placeholder name if one is not provided. */
-  launch(name) {
+  drop(name) {
     name = name || 'SampleNickGoesHere';
 
     // Scan existing droppers to see if there's one with this name. If there is,
-    // then cut it's chute. Optionally this could also just do nothing so that a
-    // user can only have a single dropper going, or it could be removed
-    // entirely.
+    // then this user is not allowed to drop again, so leave.
     for (let i = 0 ; i < this.sprites.length ; i++) {
       if (this.sprites[i].name === name) {
-        return this.sprites[i].cut_chute();
+        return;
       }
     }
 
@@ -795,6 +793,20 @@ class DropEngine {
     this.sprites.push(dropper);
   }
 
+  /* If there is currently an actively dropping dropper with the provided name,
+   * cut it's parachute so that it drops quicker. This adds a small amount of
+   * skill to the game. */
+  cut(name) {
+    name = name || 'SampleNickGoesHere';
+
+    // Scan existing droppers to see if there's one with this name. If there is,
+    // then cut it's chute.
+    for (let i = 0 ; i < this.sprites.length ; i++) {
+      if (this.sprites[i].name === name) {
+        return this.sprites[i].cut_chute();
+      }
+    }
+  }
 
   /* Render this frame; this will keep calling itself in a loop as long as the
    * animation should be running. */
@@ -844,10 +856,12 @@ function dropperDOMReady(func) {
 
 /* Trigger the game engine to start when the DOM is fully available. */
 dropperDOMReady(() => {
-  const button = document.getElementById('button');
+  const dropButton = document.getElementById('button-drop');
+  const cutButton = document.getElementById('button-cut');
 
   const engine = new DropEngine();
-  button.addEventListener('click', e => engine.launch());
+  dropButton.addEventListener('click', e => engine.drop());
+  cutButton.addEventListener('click', e => engine.cut());
 
   engine.renderLoop();
 });

@@ -29,7 +29,7 @@ div {
 }
 
 /* Style the button used for testing purposes to trigger drops. */
-#button {
+#button-drop, #button-cut {
   position: absolute;
   top: 16px;
   left: 16px;
@@ -48,7 +48,11 @@ div {
   text-align: center;
 }
 
-#button:hover {
+#button-cut {
+  left: 112px;
+}
+
+#button-drop:hover, #button-cut:hover {
   background: darkorange;
 }
 
