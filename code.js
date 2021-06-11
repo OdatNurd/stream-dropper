@@ -258,6 +258,16 @@ class Target extends Sprite {
     this.droppers.push(dropper);
   }
 
+  /* This dropper landed on the target, but is technically a loser because there
+   * is another dropper also on the target that has a higher score. So, we need
+   * to make this one a loser. */
+  ditchLoser(dropper) {
+    dropper.handleLose();
+
+    // This dropper is no longer a winner, but it was still on the target.
+    dropper.transmitDropStatus(true, false);
+  }
+
   /* On each frame update, verify that we have only a single dropper at most on
    * our surface by finding the highest score and marking all others as a
    * losing dropper. */
@@ -272,11 +282,11 @@ class Target extends Sprite {
         if (highDropper === undefined || this.droppers[i].dropScore > highDropper.dropScore) {
           // If we have an existing high score, this dropper is higher, so bye.
           if (highDropper !== undefined) {
-            highDropper.lose();
+            this.ditchLoser(highDropper);
           }
           highDropper = this.droppers[i];
         } else {
-          this.droppers[i].lose();
+          this.ditchLoser(this.droppers[i]);
         }
       }
 
@@ -676,9 +686,13 @@ class ParachuteDropper extends SpriteContainer {
       // least one pixel of it's bounding box is touching on the left or the
       // right side of the bounding box of the target.
       if (emoteX > this.target.x - this.emote.width && emoteX < this.target.x + this.target.width) {
-        this.win();
+        this.handleWin();
       } else {
-        this.lose();
+        this.handleLose();
+
+        // We're not on the target, and we also didn't win. Trigger the back end
+        // to tell them the status.
+        this.transmitDropStatus(false, false)
       }
     }
 
@@ -711,7 +725,7 @@ class ParachuteDropper extends SpriteContainer {
   /* Mark the dropper as a winner. This sets up the appropriate internal state
    * and also updates our display accordingly for being a winner based on the
    * score we actually got. */
-  win() {
+  handleWin() {
     this.winner = true;
     this.play(this.sndWinner, 0.5);
 
@@ -724,6 +738,11 @@ class ParachuteDropper extends SpriteContainer {
     this.scoreBox.element.classList.toggle('hide');
     this.scoreBox.element.classList.toggle('fadeIn');
 
+    // Trigger a notification that this dropper landed on the target and is thus
+    // a winner; once the target knows about this item, if there is another
+    // winner already with a higher score, this may be a short lived result.
+    this.transmitDropStatus(true, true);
+
     // Tell the target that we landed on that we've landed on it, so that it's
     // logic will fire.
     this.target.addDropper(this);
@@ -731,7 +750,7 @@ class ParachuteDropper extends SpriteContainer {
 
   /* Mark the dropper as a loser. This sets up the appropriate internal state
    * and also visually changes our appearance. */
-  lose() {
+  handleLose() {
     this.winner = false;
     this.element.classList.toggle('loser');
     this.nameBox.element.classList.toggle('ghost');
