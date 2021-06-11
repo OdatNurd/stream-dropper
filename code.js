@@ -1008,25 +1008,6 @@ class DropEngine {
   }
 }
 
-/* Calls the provided function when the DOM is fully loaded. It's safe to call
- * this at any point, even if the DOM is already available. */
-function dropperDOMReady(func) {
-  // Is the DOM already available to us?
-  if (document.readyState === "complete" || document.readyState === "interactive") {
-    setTimeout(func, 1);
-  } else {
-    document.addEventListener("DOMContentLoaded", func);
-  }
-}
-
-/* Trigger the game engine to start when the DOM is fully available. */
-dropperDOMReady(() => {
-  const dropButton = document.getElementById('button-drop');
-  const cutButton = document.getElementById('button-cut');
-
-  const engine = new DropEngine();
-  dropButton.addEventListener('click', e => engine.drop());
-  cutButton.addEventListener('click', e => engine.cut());
-
-  // engine.renderLoop();
-});
+/* Initialize the drop engine. */
+const engine = new DropEngine();
+// engine.renderLoop();
