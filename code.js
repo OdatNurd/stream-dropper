@@ -690,6 +690,24 @@ class ParachuteDropper extends SpriteContainer {
     if (this.emote !== null) this.emote.update(deltaT);
   }
 
+  /* This is invoked whenever a dropper finishes a drop (success or fail),
+   * including when a drop that was previously considered to be a win is now
+   * considered to be a loss because someone else landed closer to the center
+   * of the target.
+   *
+   * onTarget: Did the dropper land on the target? false if the initial drop
+   *           didn't hit the target, and true otherwise
+   * winner:   Is this drop considered to be a winner? true when a drop hits
+   *           the target, false for a dropper that was on the target but got
+   *           kicked off.
+   *
+   * NOTE: It is possible for this to be invoked "true, true" followed by
+   *       "true, false" in close succession, which is an indication that the
+   *       dropper landed on the target, but was not the high score.
+   * */
+  transmitDropStatus(onTarget, winner) {
+  }
+
   /* Mark the dropper as a winner. This sets up the appropriate internal state
    * and also updates our display accordingly for being a winner based on the
    * score we actually got. */
