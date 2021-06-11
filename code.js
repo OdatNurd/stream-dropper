@@ -950,14 +950,16 @@ class DropEngine {
       }
     }
 
-    // If there are two or more sprites AND there are active droppers, make
-    // the idle time zero because the game is still running.
+    // The game is considered to be idle when there are no active droppers,
+    // where an active dropper is any dropper currently falling OR any dropper
+    // sitting on the target waiting for it's death time (i.e. there is some
+    // other dropper that has a higher score).
     //
-    // When there are two sprites or less, then the game might be idle UNLESS
-    // one of the sprites is actively dropping.
-    this.idleTime = (this.sprites.length >= 2 && this.target.droppers.length != 1)
-        ? 0
-        : this.idleTime + deltaT;
+    // For that reason, we're idle if the sprite count is 1 (target only) or
+    // 2 (target, and the number of items sitting on the target are 0).
+    this.idleTime = (this.sprites.length == 1 || (this.sprites.length == 2 && this.target.droppers.length == 1))
+        ? this.idleTime + deltaT
+        : 0;
 
     // Schedule another call for the next frame as long as we're still running.
     if (this.running === true) {
