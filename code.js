@@ -844,7 +844,7 @@ class DropEngine {
 
     // The engine isn't running at launch, so make sure that the target is
     // hiding.
-    this.target.element.classList.add('hide');
+    this.target.element.classList.add('ghost');
 
     this.sprites.push(this.target);
   }
@@ -855,7 +855,8 @@ class DropEngine {
     // We're about to drop; if the render loop isn't already running, then we
     // should start it now.
     if (this.running === false) {
-      this.target.element.classList.remove('hide');
+      this.target.element.classList.remove('ghost', 'fadeOut');
+      this.target.element.classList.add('fadeIn');
 
       this.running = true;
       this.renderLoop();
@@ -964,7 +965,8 @@ class DropEngine {
       }
       this.target.droppers = [];
 
-      this.target.element.classList.add('hide');
+      this.target.element.classList.add('ghost', 'fadeOut');
+      this.target.element.classList.remove('fadeIn');
       this.running = false;
     }
 
