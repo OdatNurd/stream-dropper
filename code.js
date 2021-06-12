@@ -710,6 +710,8 @@ class ParachuteDropper extends SpriteContainer {
    *       dropper landed on the target, but was not the high score.
    * */
   transmitDropStatus(onTarget, winner) {
+    // this.name is the name of the user that dropped this dropper
+    // this.dropScore is the score of this dropper (if landed on the target).
   }
 
   /* Mark the dropper as a winner. This sets up the appropriate internal state
