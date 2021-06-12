@@ -867,6 +867,12 @@ class DropEngine {
       this.target.element.classList.remove('ghost', 'fadeOut');
       this.target.element.classList.add('fadeIn');
 
+      // Reset frame timings whenever the loop restarts, since the delta between
+      // the last frame and this frame is used to update things, and that can
+      // make the idle time expire.
+      this.thisFrameTime = new Date().getTime();
+      this.lastFrameTime = 0;
+
       this.running = true;
       this.renderLoop();
     }
