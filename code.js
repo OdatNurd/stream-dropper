@@ -417,7 +417,7 @@ class ParachuteDropper extends SpriteContainer {
   animationEnd(event) {
     // If we have just finished fading out the dropper as a whole, remove it
     // from the DOM and the sprite list.
-    if (event.animationName === 'fadeOutDropper') {
+    if (event.animationName === 'reapDropper') {
       this.kill();
     }
   }
@@ -430,7 +430,7 @@ class ParachuteDropper extends SpriteContainer {
   randomize(name) {
     // Ensure that the parachute is hidden until it gets deployed.
     this.parachute.element.classList.add('ghost');
-    this.parachute.element.classList.remove('release');
+    this.parachute.element.classList.remove('releaseChute');
 
     // Make sure that the emote is positioned correctly if it was mid-cut
     // during a drop.
@@ -445,7 +445,7 @@ class ParachuteDropper extends SpriteContainer {
     this.scoreBox.element.classList.remove('fadeIn');
 
     // Our element should not be ghosted, faded, swawing or marked as a loser.
-    this.element.classList.remove('ghost', 'sway', 'loser', 'fadeOut');
+    this.element.classList.remove('ghost', 'sway', 'loser', 'reap');
 
     // Display the name and also save it as a field in the class; external code
     // may want to know our name (say to constrain droppers with the same name)
@@ -549,7 +549,7 @@ class ParachuteDropper extends SpriteContainer {
     this.deathClock += deltaT;
     if (this.deathClock >= 5 * 1000) {
       this.dropComplete = true;
-      this.element.classList.toggle('fadeOut');
+      this.element.classList.toggle('reap');
       this.element.classList.toggle('ghost');
     }
   }
@@ -565,7 +565,7 @@ class ParachuteDropper extends SpriteContainer {
     // If the clock is out, we can jettison the parachute now.
     if (this.cutClock <= 0) {
       this.element.classList.remove('sway');
-      this.parachute.element.classList.add('ghost', 'release');
+      this.parachute.element.classList.add('ghost', 'releaseChute');
 
       // Trigger the actual drop from the cut now.
       this.cutTriggered = true;
@@ -583,7 +583,7 @@ class ParachuteDropper extends SpriteContainer {
     // up into existence.
     if (this.parachute !== null) {
       this.parachute.element.classList.toggle('ghost');
-      this.parachute.element.classList.toggle('deploy');
+      this.parachute.element.classList.toggle('deployChute');
 
       // Play a sound.
       this.play(this.sndParachute);
@@ -625,7 +625,7 @@ class ParachuteDropper extends SpriteContainer {
     this.emote.element.classList.remove('cut', 'cutDrop');
 
     if (this.parachute !== null && this.cutRequested === false) {
-      this.parachute.element.classList.add('ghost', 'release');
+      this.parachute.element.classList.add('ghost', 'releaseChute');
     }
   }
 
@@ -804,10 +804,7 @@ class DropEngine {
    * loop though; do to that, you must invoke it manually one time. */
   constructor() {
     // Get the elements from the DOM that we're going to be interacting with.
-    // NOTE: None of this code is currently in a DOMReady guard, so this probably
-    // only works for local testing (which is ok, since that's what we're doing).
     this.viewport = document.getElementById('viewport');
-    this.stats = document.getElementById('stats');
     this.button = document.getElementById('button');
 
     // The list of sprites that we're updating.
@@ -818,7 +815,6 @@ class DropEngine {
     // information.
     this.thisFrameTime = new Date().getTime();
     this.lastFrameTime = 0;
-    this.frameCount = 0;
     this.elapsedTime = 0;
     this.fps = 0;
 
@@ -948,9 +944,6 @@ class DropEngine {
   /* Render this frame; this will keep calling itself in a loop as long as the
    * animation should be running. */
   renderLoop() {
-    // Track the framerate and frame timings.
-    this.frameCount++;
-
     this.lastFrameTime = this.thisFrameTime;
     this.thisFrameTime = new Date().getTime();
     const deltaT = this.thisFrameTime - this.lastFrameTime;
@@ -958,9 +951,7 @@ class DropEngine {
     this.fps = 1000 / deltaT;
 
     if (this.elapsedTime >= 1000) {
-      this.stats.innerHTML = `${this.frameCount} fps`;
       this.elapsedTime -= 1000;
-      this.frameCount = 0;
     }
 
     // If we have been idle for an appropriate period of time, then stop the
@@ -1002,7 +993,6 @@ class DropEngine {
     if (this.running === true) {
       window.requestAnimationFrame(() => this.renderLoop());
     } else {
-      this.stats.innerHTML = '-- fps';
       this.idleTime = 0;
     }
   }

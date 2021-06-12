@@ -20,19 +20,11 @@ div {
   text-align: center;
 }
 
-/* The container for the status information we output, such as the framerate
- * the animation loop is rendering at. */
-#stats {
-  width: 100%;
-  bottom: 24px;
-  left: 0px;
-}
-
-/* Style the button used for testing purposes to trigger drops. */
-#button-drop, #button-cut {
+/* This class styles the buttons in the test interface, positioning them
+ * at a specific location on the screen (which must be set per button as
+ * desired). */
+.button {
   position: absolute;
-  top: 16px;
-  left: 16px;
   width: 64px;
   height: 16px;
   padding: 8px;
@@ -48,13 +40,24 @@ div {
   text-align: center;
 }
 
+/* Apply a different background to buttons that are currently being hovered
+ * using the hover psuedoclass. */
+.button:hover {
+  background: darkorange;
+}
+
+/* Style the button used for testing purposes to trigger drops. */
+#button-drop {
+  top: 16px;
+  left: 16px;
+}
+
+/* Style the button used for testing purposes to trigger cuts. */
 #button-cut {
+  top: 16px;
   left: 112px;
 }
 
-#button-drop:hover, #button-cut:hover {
-  background: darkorange;
-}
 
 /* The div with this ID fills the content of the page and is the container that
  * the DOM sprites or sprite groups are stored inside of. */
@@ -84,7 +87,10 @@ div {
   opacity: 0.0;
 }
 
-@keyframes deployChute {
+/* These keyframes are for deploying the parachute when the drop initiates; they
+ * scale the parachute up to full size from the bottom center, to give the
+ * illusion that it's billowing out after you pull the cord. */
+@keyframes deployParachute {
   0% {
     transform: scale(0.01);
   }
@@ -96,13 +102,16 @@ div {
 /* An animation that can be applied to scale something from 0.01% of its size
  * up to 100% of it's size, scaling from the center bottom of the image. This
  * is used to "deploy" the parachute. */
-.deploy {
-  animation: deployChute 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+.deployChute {
+  animation: deployParachute 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
   transform-origin: 50% 100%;
 }
 
 
-@keyframes releaseChute {
+/* These keyframes are for releasing the parachute when a drop ends or when it's
+ * cut by the player. It fades the parachute out while scaling it down and
+ * translating upwards and to the right a little. */
+@keyframes releaseParachute {
   0% {
     opacity: 1;
     transform: translate(0, 0);
@@ -116,13 +125,15 @@ div {
 /* An animation that can be applied to translate something up and away from it's
  * current location while also fading out. This is similar to the animation used
  * when a dropper dies, but in the other direction. */
-.release {
-  animation: releaseChute 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+.releaseChute {
+  animation: releaseParachute 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
   transform-origin: 50% 100%;
 }
 
-
-@keyframes sway {
+/* These keyframes describe an animation that causes the element to slowly sway
+ * to the left and right infinitely. The crossing point of the sway happens
+ * between key frames. */
+@keyframes dropperSway {
   0% {
     transform: rotate(8deg);
   }
@@ -142,12 +153,14 @@ div {
  * at 8 degrees rotated, which looks odd. Thus the animation starts more in an
  * upright portion of the animation. */
 .sway {
-  animation: sway 7s ease-in-out infinite;
+  animation: dropperSway 7s ease-in-out infinite;
   animation-delay: -5.25s;
   transform-origin: 50% 0%;
 }
 
-@keyframes fadeInText {
+/* These keyframes apply an animation that brings something from full
+ * transparency to fully opaque, for use in fading in an element. */
+@keyframes fadeInElement {
   0% {
     opacity: 0;
   }
@@ -156,14 +169,33 @@ div {
   }
 }
 
-/* An animation that can be applied to scale something from 0.01% of its size
- * up to 100% of it's size, scaling from the center bottom of the image. This
- * is used to "deploy" the parachute. */
+/* An animation that can be applied to fade an element in from full
+ * transparency. */
 .fadeIn {
-  animation: fadeInText 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+  animation: fadeInElement 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
 }
 
-@keyframes fadeOutDropper {
+
+/* These keyframes apply an animation that brings something from fully
+ * opaque to fully transparent, for use in fading out an element. */
+@keyframes fadeOutElement {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* An animation that can be applied to fade an element out from full
+ * opaqueness. */
+.fadeOut {
+  animation: fadeOutElement 0.5s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+}
+
+/* These keyframes "reap" a dropper that is considered to be a loser by fading
+ * it out as it translates out of the bottom of the screen. */
+@keyframes reapDropper {
   0% {
     opacity: 0.7;
     transform: translateY(0);
@@ -174,14 +206,17 @@ div {
   }
 }
 
-/* An animation that can be applied to scale something from 0.01% of its size
- * up to 100% of it's size, scaling from the center bottom of the image. This
- * is used to "deploy" the parachute. */
-.fadeOut {
-  animation: fadeOutDropper 3.0s cubic-bezier(0.58, 0.11, 0.26, 1.21);
+/* An animation that is used to "reap" a dead dropper, which includes one that
+ * is not a winner as well as one that gets "highlandered" when someone else
+ * gets a higher score on the target. It fades them out as the drop away. */
+.reap {
+  animation: reapDropper 3.0s cubic-bezier(0.58, 0.11, 0.26, 1.21);
 }
 
 
+/* These keyframes do a small translation in the Y axis that make the emote
+ * portion of a dropper fall slightly, to let the player know that their cut
+ * command was received. */
 @keyframes cutDropper {
   0% {
     transform: translateY(0);
@@ -258,6 +293,9 @@ div {
   z-index: -10;
 }
 
+/* This class is applied to the div that is used to hold the visible name that
+ * is associated with a dropper while it's falling, or while it's marked as a
+ * winner on the target. */
 .nickname {
   /*border: 1px dashed purple;*/
 
@@ -275,6 +313,8 @@ div {
   width: 350px;
 }
 
+/* This class is applied to the dic that is used to hold the visible score that
+ * a dropper gets when it lands sucessfully on the target. */
 .score {
   /*border: 1px dashed purple;*/
 
