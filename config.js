@@ -19,4 +19,53 @@ class Config {
     // be done any longer. Set this value to the height of the overlay to allow
     // a cut anywhere.
     static CutLockout = 1080;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // SOUND CONFIGURATION                                                    //
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // All settings here are for controlling the sounds played when various
+    // events happen in the game. The configured items are:
+    //    1. The sound file to play
+    //    2. A random playback rate range; set to null for normal playback
+    //    3. Whether pitch is preserved; ignored if playback rate is null
+    //    4. Volume level to play back, a range from 0.0 to 1.0.
+    ////////////////////////////////////////////////////////////////////////////
+    static ParachuteSound = "resources/sounds/parachute.ogg";
+    static ParachutePlayback = [0.5, 2];
+    static ParachutePitchPreserve = false;
+    static ParachuteVolume = 1.0;
+
+    // The sound that plays when we cut the chute and start a free fall drop.
+    static SnipSound = 'resources/sounds/snip.ogg';
+    static SnipPlayback = [0.5, 2];
+    static SnipPitchPreserve = false;
+    static SnipVolume = 1.0;
+
+    // The sound that plays when someone requests to cut their chute, but their
+    // dropper is below the threshold and they're not allowed to do so.
+    static BuzzSound = 'resources/sounds/buzzer.ogg';
+    static BuzzPlayback = [0.5, 2];
+    static BuzzPitchPreserve = false;
+    static BuzzVolume = 1.0;
+
+    // The sound that plays when we eventually land. This is currently random
+    // selected, but should probably be based on a selected terrain. There could
+    // also be a distinct sound played for not landing on the target at all.
+    static LandSound = 'resources/sounds/snow.ogg';
+    static LandPlayback = [0.5, 2];
+    static LandPitchPreserve = false;
+    static LandVolume = 1.0;
+
+    // The sound that plays when this dropper actually lands on the target.
+    static WinnerSound = "resources/sounds/whoopee.ogg";
+    static WinnerPlayback = [0.75, 2];
+    static WinnerPitchPreserve = false;
+    static WinnerVolume = 0.5;
+
+    // A wilhelm scream to be played randomly (and infrequently)
+    static ScreamSound = "resources/sounds/wilhelm.ogg";
+    static ScreamPlayback = [0.75, 2.0];
+    static ScreamPitchPreserve = false;
+    static ScreamVolume = 1.0;
 }

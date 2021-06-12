@@ -311,11 +311,6 @@ class ParachuteDropper extends SpriteContainer {
   constructor(container, className, x, y, target, parachuteSheet, emoteSheet, name) {
     super(container, className, x, y);
 
-    // Randomly choose a sound to be played when this dropper eventually lands
-    // at the bottom of the screen.
-    const landSounds = ["leaves.ogg", "snow.ogg", "sploosh.ogg"];
-    const landPick = landSounds[Utils.randomIntInRange(0, 2)];
-
     // Keep a reference to our drop target.
     this.target = target;
 
@@ -346,46 +341,16 @@ class ParachuteDropper extends SpriteContainer {
       this.parachute.height * 0.5
     );
 
-    // The sound that plays when the parachute is deployed.
-    this.sndParachute = document.createElement("audio");
-    this.sndParachute.src = "resources/sounds/parachute.ogg";
-    this.sndParachute.playbackRate = Utils.randomFloatInRange(0.5, 2);
-    this.sndParachute.preservesPitch = false;
+    // Create the elements for all of the sounds that we're going to play; the
+    // tag attributes come from the configuration, to allow for sounds to be
+    // easily swapped out.
+    this.sndParachute = this.createAudioElement('Parachute');
+    this.sndSnip = this.createAudioElement('Snip');
+    this.sndBuzz = this.createAudioElement('Buzz');
+    this.sndLand = this.createAudioElement('Land');
+    this.sndWinner = this.createAudioElement('Winner');
+    this.sndScream = this.createAudioElement('Scream');
 
-    // The sound that plays when we cut the chute and start a free fall drop.
-    this.sndSnip = document.createElement("audio");
-    this.sndSnip.src = 'resources/sounds/snip.ogg';
-    this.sndSnip.playbackRate = Utils.randomFloatInRange(0.5, 2);
-    this.sndSnip.preservesPitch = false;
-
-    // The sound that plays when someone requests to cut their chute, but their
-    // dropper is below the threshold and they're not allowed to do so.
-    this.sndBuzz = document.createElement("audio");
-    this.sndBuzz.src = 'resources/sounds/buzzer.ogg';
-    this.sndBuzz.playbackRate = Utils.randomFloatInRange(0.5, 2);
-    this.sndBuzz.preservesPitch = false;
-
-    // The sound that plays when we eventually land. This is currently random
-    // selected, but should probably be based on a selected terrain. There could
-    // also be a distinct sound played for not landing on the target at all.
-    this.sndLand = document.createElement("audio");
-    this.sndLand.src = `resources/sounds/${landPick}`;
-    this.sndLand.playbackRate = Utils.randomFloatInRange(0.5, 2);
-    this.sndLand.preservesPitch = false;
-
-    // The sound that plays when this dropper actually lands on the target.
-    this.sndWinner = document.createElement("audio");
-    this.sndWinner.src = "resources/sounds/whoopee.ogg";
-    this.sndWinner.playbackRate = Utils.randomFloatInRange(0.75, 2);
-    this.sndWinner.preservesPitch = false;
-
-    // A wilhelm scream to be played randomly (and infrequently)
-    this.sndScream = document.createElement("audio");
-    this.sndScream.src = "resources/sounds/wilhelm.ogg";
-    this.sndScream.playbackRate = Utils.randomFloatInRange(0.75, 2.0);
-    this.sndScream.preservesPitch = false;
-
-    // Attach the sounds to our element.
     this.element.appendChild(this.sndParachute);
     this.element.appendChild(this.sndLand);
     this.element.appendChild(this.sndWinner);
@@ -406,6 +371,22 @@ class ParachuteDropper extends SpriteContainer {
 
     // With all of our initial setup done, randomize everything for a new drop.
     this.randomize(name);
+  }
+
+  /* Creates and returns an audio element set to play the sound configured by
+   * the configuration items with the given prefix value. */
+  createAudioElement(prefix) {
+    const element = document.createElement("audio");
+
+    element.src = Config[`${prefix}Sound`];
+    element.preservesPitch = Config[`${prefix}PitchPreserve`];
+
+    const rate = Config[`${prefix}Playback`];
+    if (rate !== null) {
+      element.playbackRate = Utils.randomFloatInRange(rate[0], rate[1]);
+    }
+
+    return element;
   }
 
   /* Kills this entity by adding it to the entity pool, removing it from the DOM
@@ -594,7 +575,7 @@ class ParachuteDropper extends SpriteContainer {
       this.parachute.element.classList.toggle('deployChute');
 
       // Play a sound.
-      this.play(this.sndParachute);
+      this.play(this.sndParachute, Config.ParachuteVolume);
     }
 
     // Start swaying now that the parachute is out.
@@ -605,13 +586,13 @@ class ParachuteDropper extends SpriteContainer {
    * actually being deployed if it happens soon enough. */
   cut_chute() {
     if (this.cutRequested === true || this.y > Config.CutLockout) {
-      return this.play(this.sndBuzz);
+      return this.play(this.sndBuzz, Config.BuzzVolume);
     }
 
     // Visibly make the emote drop slightly, and then play a sound to let the
     // players know that a cut is in progress.
     this.emote.element.classList.add('cut', 'cutDrop');
-    this.play(this.sndSnip);
+    this.play(this.sndSnip, Config.SnipVolume);
 
     // Consider this chute cut now.
     this.cutRequested = true;
@@ -623,7 +604,7 @@ class ParachuteDropper extends SpriteContainer {
   land(deltaT) {
     // Mark that we've landed and play a sound.
     this.landed = true;
-    this.play(this.sndLand);
+    this.play(this.sndLand, Config.LandVolume);
 
     // Now that we have landed, we should no longer sway, and our parachute
     // should no longer be visible.
@@ -735,7 +716,7 @@ class ParachuteDropper extends SpriteContainer {
    * score we actually got. */
   handleWin() {
     this.winner = true;
-    this.play(this.sndWinner, 0.5);
+    this.play(this.sndWinner, Config.WinnerVolume);
 
     // Calculate our score
     this.dropScore = this.score();
