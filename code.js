@@ -358,6 +358,13 @@ class ParachuteDropper extends SpriteContainer {
     this.sndSnip.playbackRate = Utils.randomFloatInRange(0.5, 2);
     this.sndSnip.preservesPitch = false;
 
+    // The sound that plays when someone requests to cut their chute, but their
+    // dropper is below the threshold and they're not allowed to do so.
+    this.sndBuzz = document.createElement("audio");
+    this.sndBuzz.src = 'resources/sounds/buzzer.ogg';
+    this.sndBuzz.playbackRate = Utils.randomFloatInRange(0.5, 2);
+    this.sndBuzz.preservesPitch = false;
+
     // The sound that plays when we eventually land. This is currently random
     // selected, but should probably be based on a selected terrain. There could
     // also be a distinct sound played for not landing on the target at all.
@@ -598,7 +605,7 @@ class ParachuteDropper extends SpriteContainer {
    * actually being deployed if it happens soon enough. */
   cut_chute() {
     if (this.cutRequested === true || this.y > Config.CutLockout) {
-      return;
+      return this.play(this.sndBuzz);
     }
 
     // Visibly make the emote drop slightly, and then play a sound to let the
