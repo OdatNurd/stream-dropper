@@ -472,8 +472,9 @@ class ParachuteDropper extends SpriteContainer {
     // fall.
     this.cutRequested = false;
     this.cutTriggered = false;
-    // this.cutClock = 5000;
-    this.cutClock = Utils.randomFloatInRange(750, 1500);
+    this.cutClock = (Config.CutRange === null)
+      ? 0
+      : Utils.randomFloatInRange(Config.CutRange[0], Config.CutRange[1]);
 
     // We have not won and we're not complete (and thus, the death clock is empty).
     this.winner = false;
@@ -596,7 +597,7 @@ class ParachuteDropper extends SpriteContainer {
   /* Cuts the chute on this dropper if it's been deployed, or stops it from
    * actually being deployed if it happens soon enough. */
   cut_chute() {
-    if (this.cutRequested === true) {
+    if (this.cutRequested === true || this.y > Config.CutLockout) {
       return;
     }
 
@@ -857,24 +858,45 @@ class DropEngine {
       this.viewport.clientHeight - (0.75 * this.targetSheet.spriteH));
   }
 
+  /* Starts the render loop running, including setting up or reinitializing all
+   * the variables that are used to track the loop.
+   *
+   * This kicks off the loop by making an initial render loop call. */
+  startRenderLoop() {
+    this.positionTarget();
+    this.target.element.classList.remove('ghost', 'fadeOut');
+    this.target.element.classList.add('fadeIn');
+
+    // Reset frame timings whenever the loop restarts, since the delta between
+    // the last frame and this frame is used to update things, and that can
+    // make the idle time expire.
+    this.thisFrameTime = new Date().getTime();
+    this.lastFrameTime = 0;
+
+    this.running = true;
+    this.renderLoop();
+  }
+
+  /* Stops a running render loop, doing all of the cleanup needed along with
+   * setting the flag that stops the loop from re-starting itself. */
+  stopRenderLoop() {
+    for (let i = 0 ; i < this.target.droppers.length ; i++) {
+      this.target.droppers[i].kill();
+    }
+    this.target.droppers = [];
+
+    this.target.element.classList.add('ghost', 'fadeOut');
+    this.target.element.classList.remove('fadeIn');
+    this.running = false;
+  }
+
   /* Create and drop a parachute dropper in the viewport, using the given
    * name, or a placeholder name if one is not provided. */
   drop(name, emoteId) {
     // We're about to drop; if the render loop isn't already running, then we
     // should start it now.
     if (this.running === false) {
-      this.positionTarget();
-      this.target.element.classList.remove('ghost', 'fadeOut');
-      this.target.element.classList.add('fadeIn');
-
-      // Reset frame timings whenever the loop restarts, since the delta between
-      // the last frame and this frame is used to update things, and that can
-      // make the idle time expire.
-      this.thisFrameTime = new Date().getTime();
-      this.lastFrameTime = 0;
-
-      this.running = true;
-      this.renderLoop();
+      this.startRenderLoop();
     }
 
     name = name || 'SampleNickGoesHere';
@@ -940,6 +962,10 @@ class DropEngine {
    * cut it's parachute so that it drops quicker. This adds a small amount of
    * skill to the game. */
   cut(name) {
+    if (Config.CutAllowed === false) {
+      return;
+    }
+
     // A cut can't happen if the render loop isn't running, because in that case
     // there aren't any droppers.
     if (this.running === false) {
@@ -973,16 +999,8 @@ class DropEngine {
     // If we have been idle for an appropriate period of time, then stop the
     // render loop from running; this also needs to kill all items that are
     // sitting on the target.
-    if (this.idleTime >= 1000 * 60 * 1.5) {
-    // if (this.idleTime >= 5000) {
-      for (let i = 0 ; i < this.target.droppers.length ; i++) {
-        this.target.droppers[i].kill();
-      }
-      this.target.droppers = [];
-
-      this.target.element.classList.add('ghost', 'fadeOut');
-      this.target.element.classList.remove('fadeIn');
-      this.running = false;
+    if (Config.IdleTime !== 0 && this.idleTime >= Config.IdleTime) {
+      this.stopRenderLoop();
     }
 
     // Trigger an update on all sprites and sprite containers added to the main
@@ -1017,4 +1035,6 @@ class DropEngine {
 
 /* Initialize the drop engine. */
 const engine = new DropEngine();
-// engine.renderLoop();
+if (Config.IdleTime === 0) {
+  engine.startRenderLoop();
+}
