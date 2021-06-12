@@ -835,12 +835,8 @@ class DropEngine {
     this.targetSheet = new SpriteSheet('target', 390, 110, 390, 110);
 
     // Create the target that the droppers are aiming for.
-    this.target = new Target(this.viewport, this.targetSheet,
-      Utils.randomIntInRange(
-        this.emoteSheet.spriteW * 1.5,
-        this.viewport.clientWidth - this.targetSheet.spriteW - (this.emoteSheet.spriteW * 1.5)
-      ),
-      this.viewport.clientHeight - (0.75 * this.targetSheet.spriteH));
+    this.target = new Target(this.viewport, this.targetSheet);
+    this.positionTarget();
 
     // The engine isn't running at launch, so make sure that the target is
     // hiding.
@@ -849,12 +845,25 @@ class DropEngine {
     this.sprites.push(this.target);
   }
 
+  /* Every time this is called, the target is randomly positioned on the screen,
+   * near the bottom at a set height and within a range of the whole screen
+   * constrained by the size of the emotes used in the dropper. */
+  positionTarget() {
+    this.target.setPos(
+      Utils.randomIntInRange(
+        this.emoteSheet.spriteW * 1.5,
+        this.viewport.clientWidth - this.targetSheet.spriteW - (this.emoteSheet.spriteW * 1.5)
+      ),
+      this.viewport.clientHeight - (0.75 * this.targetSheet.spriteH));
+  }
+
   /* Create and drop a parachute dropper in the viewport, using the given
    * name, or a placeholder name if one is not provided. */
   drop(name, emoteId) {
     // We're about to drop; if the render loop isn't already running, then we
     // should start it now.
     if (this.running === false) {
+      this.positionTarget();
       this.target.element.classList.remove('ghost', 'fadeOut');
       this.target.element.classList.add('fadeIn');
 
