@@ -27,22 +27,23 @@ class SpriteSheet {
   /* A sprite sheet consists of a css class that is used to display an image,
    * the width and height of that image, and the count of sprites in both
    * dimensions that it contains. */
-  constructor(cssClass, sheetW, sheetH, spriteW, spriteH) {
+  constructor(cssClass, sheetInfo, spriteW, spriteH) {
     this.cssClass = cssClass;
 
-    this.width = sheetW;
-    this.height = sheetH;
+    this.width = sheetInfo[0];
+    this.height = sheetInfo[1];
+    this.spriteCount = sheetInfo[2];
 
     this.spriteW = spriteW;
     this.spriteH = spriteH || spriteW;
 
-    this.frameWidth = sheetW / spriteW;
-    this.frameHeight = sheetH / spriteH;
+    this.frameWidth = sheetInfo[0] / spriteW;
+    this.frameHeight = sheetInfo[1] / spriteH;
   }
 
   /* Randomly select a frame number from the count of available frames. */
   randomFrame() {
-    return Utils.randomIntInRange(0, this.frameWidth * this.frameHeight);
+    return Utils.randomIntInRange(0, this.spriteCount);
   }
 
   /* For any valid frame number in this sprite sheet, return the X position in
@@ -819,9 +820,9 @@ class DropEngine {
     this.idleTime = 0;
 
     // Create the sprite sheets for our test emotes and the parachute sprites.
-    this.emoteSheet = new SpriteSheet('emote', 280, 224, 56, 56);
-    this.parachuteSheet = new SpriteSheet('parachute', 360, 360, 120, 120);
-    this.targetSheet = new SpriteSheet('target', 390, 110, 390, 110);
+    this.emoteSheet = new SpriteSheet('emote', Config.EmoteSpriteInfo, 56, 56);
+    this.parachuteSheet = new SpriteSheet('parachute', Config.ParachuteSpriteInfo, 120, 120);
+    this.targetSheet = new SpriteSheet('target', Config.TargetSpriteInfo, 390, 110);
 
     // Create the target that the droppers are aiming for.
     this.target = new Target(this.viewport, this.targetSheet);
@@ -854,6 +855,7 @@ class DropEngine {
     this.positionTarget();
     this.target.element.classList.remove('ghost', 'fadeOut');
     this.target.element.classList.add('fadeIn');
+    this.target.setFrame(this.target.sheet.randomFrame());
 
     // Reset frame timings whenever the loop restarts, since the delta between
     // the last frame and this frame is used to update things, and that can
