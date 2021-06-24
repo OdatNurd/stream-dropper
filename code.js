@@ -600,7 +600,10 @@ class ParachuteDropper extends SpriteContainer {
    * actually being deployed if it happens soon enough. */
   cut_chute() {
     if (this.cutRequested === true || this.y > Config.CutLockout) {
-      return this.play(this.sndBuzz, Config.BuzzVolume);
+      if (this.landed === false) {
+        this.play(this.sndBuzz, Config.BuzzVolume);
+      }
+      return;
     }
 
     // Visibly make the emote drop slightly, and then play a sound to let the
