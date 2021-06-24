@@ -58,6 +58,12 @@ div {
   left: 112px;
 }
 
+/* Style the button used for testing purposes to trigger abdication. */
+#button-abdicate {
+  top: 16px;
+  left: 208px;
+}
+
 
 /* The div with this ID fills the content of the page and is the container that
  * the DOM sprites or sprite groups are stored inside of. */

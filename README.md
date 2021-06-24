@@ -159,6 +159,19 @@ has, though in all likelyhood this would require some amount of custom code.
   }
 ```
 
+```js
+  // If the game is configured to allow it, calling this will check the target
+  // for a dropper that has this name, and eject it willingly from the target.
+  //
+  // This allows a user that's sitting on the target to abdicate their throne
+  // and willingly eject themselves from the target so that they can drop again.
+  //
+  // config.js has settings to control if this is allowed, so that you can
+  // control whether you want it to be possible or not.
+  engine.abdicate(name) {
+  }
+```
+
 ### Communicating drops to a chat bot ###
 
 In addition to the above, the `ParachuteDropper` class contains a stub method
@@ -182,11 +195,15 @@ the bot for display in the chat, accumulation on a leader board, etc.
   //     a dropper that was on the target previously and got kicked off by
   //     someone landing closer to the center.
   //
+  //   - voluntary is a boolean that indicates if being removed from the target
+  //     was a voluntary action or not. This will always be false unless the
+  //     user abdicated themselves.
+  //
   // It's possible for this to be invoked "true, true" (winner landed on the
   // target) immediately followed by "true, false" (landed on the target, but
   // no longer a winner) if there is already someone on the target with a
   // higher score.
-  ParachuteDropper.transmitDropStatus(onTarget, winner) {
+  ParachuteDropper.transmitDropStatus(onTarget, winner, voluntary) {
     // this.name is the name of the user that dropped this dropper
     // this.dropScore is the score of this dropper (if landed on the target).
   }

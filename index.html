@@ -12,15 +12,18 @@
     <div id="viewport"></div>
     <a id="button-drop" class="button">Drop</a>
     <a id="button-cut" class="button">Cut</a>
+    <a id="button-abdicate" class="button">Abdicate</a>
 
     <script type="text/javascript" src="config.js"></script>
     <script type="text/javascript" src="code.js"></script>
     <script type="text/javascript">
       const dropButton = document.getElementById('button-drop');
       const cutButton = document.getElementById('button-cut');
+      const abdicateButton = document.getElementById('button-abdicate');
 
       dropButton.addEventListener('click', e => engine.drop());
       cutButton.addEventListener('click', e => engine.cut());
+      abdicateButton.addEventListener('click', e => engine.abdicate());
     </script>
 </body>
 </html>

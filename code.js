@@ -261,12 +261,25 @@ class Target extends Sprite {
 
   /* This dropper landed on the target, but is technically a loser because there
    * is another dropper also on the target that has a higher score. So, we need
-   * to make this one a loser. */
-  ditchLoser(dropper) {
+   * to make this one a loser. The voluntary flag indicates if the dropper
+   * self-ejected itself from the game or not. */
+  ditchLoser(dropper, voluntary) {
     dropper.handleLose();
 
     // This dropper is no longer a winner, but it was still on the target.
-    dropper.transmitDropStatus(true, false);
+    dropper.transmitDropStatus(true, false, voluntary);
+  }
+
+  /* Scan all of the droppers currently sitting on the target (if any), and if
+   * we find one that has the name provied, mark it as a loser but do so with
+   * the voluntary flag so that the back end knows what's up. */
+  abdicateDropper(name) {
+    for (let i = 0 ; i < this.droppers.length ; i++) {
+      if (this.droppers[i].name === name) {
+        this.ditchLoser(this.droppers[i], true);
+        return this.droppers.splice(i, 1);
+      }
+    }
   }
 
   /* On each frame update, verify that we have only a single dropper at most on
@@ -283,11 +296,11 @@ class Target extends Sprite {
         if (highDropper === undefined || this.droppers[i].dropScore > highDropper.dropScore) {
           // If we have an existing high score, this dropper is higher, so bye.
           if (highDropper !== undefined) {
-            this.ditchLoser(highDropper);
+            this.ditchLoser(highDropper, false);
           }
           highDropper = this.droppers[i];
         } else {
-          this.ditchLoser(this.droppers[i]);
+          this.ditchLoser(this.droppers[i], false);
         }
       }
 
@@ -973,6 +986,17 @@ class DropEngine {
         return this.sprites[i].cut_chute();
       }
     }
+  }
+
+  /* If there is currently a dropper with the name provided sitting on the
+   * target, then this will make that dropper abdicate their throne (i.e. they
+   * get marked as a Loser), allowing them to play again. */
+  abdicate(name) {
+    if (Config.AbdicateAllowed === false) {
+      return;
+    }
+
+    this.target.abdicateDropper(name || 'SampleNickGoesHere');
   }
 
   /* Render this frame; this will keep calling itself in a loop as long as the

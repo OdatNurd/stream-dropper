@@ -21,6 +21,12 @@ class Config {
     // a cut anywhere.
     static CutLockout = 1080;
 
+    // If true, the user is allowed to abdicate their position on the board if
+    // they're a winner. When this is set to false, the only way for the user to
+    // get ejected from the board is if they get Highlandered or if the idle
+    // time is reached (or the page otherwise reloads).
+    static AbdicateAllowed = true;
+
     ////////////////////////////////////////////////////////////////////////////
     // IMAGE CONFIGURATION                                                    //
     ////////////////////////////////////////////////////////////////////////////
