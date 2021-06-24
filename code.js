@@ -715,17 +715,19 @@ class ParachuteDropper extends SpriteContainer {
    * considered to be a loss because someone else landed closer to the center
    * of the target.
    *
-   * onTarget: Did the dropper land on the target? false if the initial drop
-   *           didn't hit the target, and true otherwise
-   * winner:   Is this drop considered to be a winner? true when a drop hits
-   *           the target, false for a dropper that was on the target but got
-   *           kicked off.
+   * onTarget:  Did the dropper land on the target? false if the initial drop
+   *            didn't hit the target, and true otherwise
+   * winner:    Is this drop considered to be a winner? true when a drop hits
+   *            the target, false for a dropper that was on the target but got
+   *            kicked off.
+   * voluntary: Did the dropper get kicked off the target voluntarily? This is
+   *            only true when the user abdicates.
    *
    * NOTE: It is possible for this to be invoked "true, true" followed by
    *       "true, false" in close succession, which is an indication that the
    *       dropper landed on the target, but was not the high score.
    * */
-  transmitDropStatus(onTarget, winner) {
+  transmitDropStatus(onTarget, winner, voluntary) {
     // this.name is the name of the user that dropped this dropper
     // this.dropScore is the score of this dropper (if landed on the target).
   }
