@@ -988,7 +988,7 @@ class DropEngine {
       dropper.emote.element.classList.add('twitch-emote');
 
       // Apply a background image that will load the custom twitch emote.
-      dropper.emote.element.style.backgroundImage = `url(https://static-cdn.jtvnw.net/emoticons/v1/${emoteId}/2.0)`
+      dropper.emote.element.style.backgroundImage = `url(https://static-cdn.jtvnw.net/emoticons/v2/${emoteId}/default/dark/2.0)`
 
       // Make sure that frame 0 is applied, since this might have previously
       // been a standard emote that wasn't on frame 0 and the background
