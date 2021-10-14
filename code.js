@@ -249,6 +249,10 @@ class Target extends Sprite {
   constructor(container, spriteSheet, x, y) {
     super(container, spriteSheet, 0, x, y);
 
+    // This tracks who the current winner of the game is; when it's null, there
+    // is no winner. This is also reset to null when the render loop restarts.
+    this.winner = null;
+
     // The droppers that are currently sitting on the target.
     this.droppers = [];
   }
@@ -257,6 +261,20 @@ class Target extends Sprite {
    * target. */
   addDropper(dropper) {
     this.droppers.push(dropper);
+  }
+
+  /* Declare that a specific dropper is the official (current) winner of the
+   * game. This updates the internal state to know who the winner currently is
+   * and also does winner specific tasks like playing the winning sound and
+   * letting the back end know that someone is a new winner. */
+  declareWinner(dropper) {
+    this.winner = dropper;
+
+    // Declare that a new dropper is the current winner of the game; play a
+    // sound and trigger a notification to the back end that there's a new
+    // dropper on the target and that it's a winner.
+    dropper.play(dropper.sndWinner, Config.WinnerVolume);
+    dropper.transmitDropStatus(true, true);
   }
 
   /* This dropper landed on the target, but is technically a loser because there
@@ -268,6 +286,12 @@ class Target extends Sprite {
 
     // This dropper is no longer a winner, but it was still on the target.
     dropper.transmitDropStatus(true, false, voluntary);
+
+    // If the dropper that's now a loser is the current winner, remove it; this
+    // can happen if the sole person on the target abdicates, for example.
+    if (this.winner !== null && dropper.name === this.winner.name) {
+      this.winner = null;
+    }
   }
 
   /* Scan all of the droppers currently sitting on the target (if any), and if
@@ -286,6 +310,14 @@ class Target extends Sprite {
    * our surface by finding the highest score and marking all others as a
    * losing dropper. */
   update(deltaT) {
+    // We have nothing to do if there are no droppers.
+    if (this.droppers.length === 0) {
+      return;
+    }
+
+    // If there's more than one dropper currently sitting on the target, then
+    // only the one with the highest score is allowed to remain; the others will
+    // be forcibly ejected as losers.
     if (this.droppers.length > 1) {
       let highDropper = undefined;
 
@@ -307,6 +339,14 @@ class Target extends Sprite {
       // Adjust the list of droppers to contain only the high scorer.
       this.droppers.length = 0;
       this.droppers.push(highDropper);
+    }
+
+    // There is now exactly one dropper. If there's no winner yet, or there is a
+    // winner but the name isn't the same as the single remaining dropper, then
+    // declare a new winner. The second case is for when a new dropper
+    // "bumps" an existing one due to a higher score.
+    if (this.winner === null || this.winner.name !== this.droppers[0].name) {
+        this.declareWinner(this.droppers[0]);
     }
   }
 }
@@ -730,6 +770,8 @@ class ParachuteDropper extends SpriteContainer {
   transmitDropStatus(onTarget, winner, voluntary) {
     // this.name is the name of the user that dropped this dropper
     // this.dropScore is the score of this dropper (if landed on the target).
+    //
+    // console.log(`${this.name} scored ${this.dropScore || -1}: onTarget: ${onTarget}, winner: ${winner}, voluntary: ${voluntary}`);
   }
 
   /* Mark the dropper as a winner. This sets up the appropriate internal state
@@ -737,7 +779,6 @@ class ParachuteDropper extends SpriteContainer {
    * score we actually got. */
   handleWin() {
     this.winner = true;
-    this.play(this.sndWinner, Config.WinnerVolume);
 
     // Calculate our score
     this.dropScore = this.score();
@@ -747,11 +788,6 @@ class ParachuteDropper extends SpriteContainer {
     this.scoreBox.element.innerText = this.dropScore.toFixed(3);
     this.scoreBox.element.classList.toggle('hide');
     this.scoreBox.element.classList.toggle('fadeIn');
-
-    // Trigger a notification that this dropper landed on the target and is thus
-    // a winner; once the target knows about this item, if there is another
-    // winner already with a higher score, this may be a short lived result.
-    this.transmitDropStatus(true, true);
 
     // Tell the target that we landed on that we've landed on it, so that it's
     // logic will fire.
@@ -878,6 +914,9 @@ class DropEngine {
     this.target.element.classList.remove('ghost', 'fadeOut');
     this.target.element.classList.add('fadeIn');
     this.target.setFrame(this.target.sheet.randomFrame());
+
+    // When the loop starts the game is fresh, so make sure there's no winner.
+    this.target.winner = null;
 
     // Reset frame timings whenever the loop restarts, since the delta between
     // the last frame and this frame is used to update things, and that can
