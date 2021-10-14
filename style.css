@@ -64,6 +64,12 @@ div {
   left: 208px;
 }
 
+/* Style the button used for testing purposes to trigger number bumping. */
+#button-bump {
+  top: 16px;
+  left: 304px;
+}
+
 
 /* The div with this ID fills the content of the page and is the container that
  * the DOM sprites or sprite groups are stored inside of. */

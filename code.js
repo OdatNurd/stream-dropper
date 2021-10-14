@@ -810,6 +810,8 @@ class EntityPool {
 /* This class drives the entire simulation, and is responsible for the render
  * loop running and moving all of the droppers. */
 class DropEngine {
+  nameSuffix = 1;
+
   /* Set up the overall state for the engine. This does not kick off the render
    * loop though; do to that, you must invoke it manually one time. */
   constructor() {
@@ -900,6 +902,13 @@ class DropEngine {
     this.running = false;
   }
 
+  /* Bump the internal tracking number that is added to the names of droppers;
+   * this is useful for testing in cases where we want more than one dropper
+   * to be active at a time. */
+  bump() {
+    this.nameSuffix++;
+  }
+
   /* Create and drop a parachute dropper in the viewport, using the given
    * name, or a placeholder name if one is not provided. */
   drop(name, emoteId) {
@@ -909,7 +918,7 @@ class DropEngine {
       this.startRenderLoop();
     }
 
-    name = name || 'SampleNickGoesHere';
+    name = name || 'SampleNickGoesHere' + this.nameSuffix;
 
     // if (Utils.randomFloatInRange(0, 1) >= 0.5) {
     //   emoteId = '306898610';
@@ -982,7 +991,7 @@ class DropEngine {
       return;
     }
 
-    name = name || 'SampleNickGoesHere';
+    name = name || 'SampleNickGoesHere' + this.nameSuffix;
 
     // Scan existing droppers to see if there's one with this name. If there is,
     // then cut it's chute.
@@ -1001,7 +1010,7 @@ class DropEngine {
       return;
     }
 
-    this.target.abdicateDropper(name || 'SampleNickGoesHere');
+    this.target.abdicateDropper(name || 'SampleNickGoesHere' + this.nameSuffix);
   }
 
   /* Render this frame; this will keep calling itself in a loop as long as the
