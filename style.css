@@ -278,7 +278,8 @@ div {
  * for which the URL is a twitch emote URL. */
 .twitch-emote {
   /*border: 1px dashed red;*/
-  background-position: 0px 0px;
+  background-size: contain;
+  background-repeat: no-repeat;
   width:  56px;
   height: 56px;
   z-index: 1;
